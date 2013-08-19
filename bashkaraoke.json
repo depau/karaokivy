@@ -1,0 +1,107 @@
+[
+    { "type":    "title",
+      "title":   "Bash!Karaoke internal settings - don't change them unless you know what you're doing"},
+
+    { "type":    "options",
+      "title":   "EasyBashGUI supermode",
+      "desc":    "The default interface for Bash!Karaoke",
+      "section": "BashKaraoke",
+      "key":     "supermode",
+      "options": ["Automatic", "YAD", "Zenity", "GTKDialog", "KDialog", "XDialog", "Dialog", "Command line"]},
+
+    { "type":    "options",
+      "title":   "To sing text color",
+      "desc":    "The color of the words that you haven't sung yet (Bash!Karaoke only)",
+      "section": "BashKaraoke",
+      "key":     "foreground_1",
+      "options": ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]},
+
+    { "type":    "options",
+      "title":   "Sung text color",
+      "desc":    "The color of the words you have already sung (Bash!Karaoke only)",
+      "section": "BashKaraoke",
+      "key":     "foreground_2",
+      "options": ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]},
+
+     { "type":    "bool",
+       "title":   "Bash!Karaoke GTK interface",
+       "desc":    "Toggle the new (and unstable) GTK interface",
+       "section": "BashKaraoke",
+       "key":     "use_gtk"},
+
+      { "type":    "bool",
+       "title":   "GTKDialog Single Window interface",
+       "desc":    "Toggle the GSW mode",
+       "section": "BashKaraoke",
+       "key":     "use_gsw"},
+
+      { "type":    "bool",
+       "title":   "BUC interface",
+       "desc":    "Toggle the BUC interface",
+       "section": "BashKaraoke",
+       "key":     "use_buc"},
+
+      { "type":    "options",
+       "title":   "Lyrics extraction mode",
+       "desc":    "Select the lyrics extraction engine",
+       "section": "BashKaraoke",
+       "key":     "extract_way",
+       "options": ["internal", "external"]},
+
+      { "type":   "options",
+       "title":   "Error tolerance",
+       "desc":    "0 = no tolerance, 1 = medium tolerance, 2 = high tolerance",
+       "section": "BashKaraoke",
+       "key":     "error_correction_chars",
+       "options": ["0", "1", "2"]},
+
+      { "type":    "numeric",
+       "title":   "Columns",
+       "desc":    "The maximum number of characters per line",
+       "section": "BashKaraoke",
+       "key":     "columns"},
+
+      { "type":    "numeric",
+       "title":   "Rows",
+       "desc":    "The maximum number of rows",
+       "section": "BashKaraoke",
+       "key":     "rows"},
+
+      { "type":    "many_options",
+       "title":   "Song language",
+       "desc":    "The language of the song (also used to localize Bash!Karaoke)",
+       "section": "BashKaraoke",
+       "key":     "LANG",
+       "options": #!?!?!?#},
+
+      { "type":    "string",
+       "title":   "Character encoding",
+       "section": "BashKaraoke",
+       "key":     "char_encoding"},
+
+      { "type":    "string",
+       "title":   "Menu delimiter",
+       "desc":    "The separator used between sections in dialog modes",
+       "section": "BashKaraoke",
+       "key":     "delimiter"},
+
+      { "type":    "bool",
+       "title":   "Show karaoke window",
+       "section": "BashKaraoke",
+       "key":     "karaoke_window"},
+
+      { "type":    "bool",
+       "title":   "Show levels window",
+       "section": "BashKaraoke",
+       "key":     "levels_window"},
+
+      { "type":    "bool",
+       "title":   "Show channels window",
+       "section": "BashKaraoke",
+       "key":     "channels_window"},
+
+      { "type":    "bool",
+       "title":   "Show spectrogram window",
+       "section": "BashKaraoke",
+       "key":     "spectrogram_window"}
+]

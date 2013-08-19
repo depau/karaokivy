@@ -1,0 +1,15 @@
+[
+    { "type":    "options",
+      "title":   "MIDI player",
+      "desc":    "The program used to play MIDI files",
+      "section": "Karaokivy",
+      "key":     "midi_player",
+      "options": ["Bash!Karaoke", "Kivy", "GStreamer", "Timidity"],
+      "disabled": true},
+
+    { "type":    "soundfont",
+      "title":   "SoundFont",
+      "desc":    "The default SoundFont used to play MIDI files",
+      "section": "BashKaraoke",
+      "key":     "soundfont"}
+]

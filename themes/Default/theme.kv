@@ -1,0 +1,154 @@
+#:kivy 1.8.0
+#:import ospathjoin os.path.join
+
+# Karaokivy Default (Holo-like) theme
+#
+# Copyright (C) 2013 Davide Depau <david.dep.1996@gmail.com>
+#
+# Karaokivy is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Karaokivy is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.    If not, see <http://www.gnu.org/licenses/>.
+
+# This theme is based on default Kivy Android-like theme
+
+<TBSector@BoxLayout>:
+	orientation: "horizontal"
+	size_hint_x: None
+
+# You can uncomment the following lines to change the font colour/family
+# <Label>:
+#    color: 0, 0, 0, 1
+#    font: "/path/to/font.ttf"
+
+<Root>:
+	orientation: "vertical"
+	karlabel: karlabel
+	image: image
+	tb: toolbar
+	pbbutton: playpause
+	volume: volume
+	speed: speed
+	pitch: pitch
+
+    canvas:
+        Color:
+            rgb: 0, 0, 0
+        Rectangle:
+            source: 'data/images/background.png'
+            size: self.size
+	ActionBar:
+	    pos_hint: {'top':1}
+	    ActionView:
+	        use_separator: True
+	        ActionPrevious:
+	            title: 'Karaokivy'
+	            app_icon: "atlas://data/images/logo/logo_actionbar"
+	            with_previous: False
+	        ActionOverflow
+	        ActionButton:
+	            text: 'Open'
+	            icon: 'atlas://data/images/defaulttheme/open'
+	            on_release: app.open_file_dialog()
+	        ActionButton:
+	            text: 'Settings'
+	            icon: 'atlas://data/images/defaulttheme/settings'
+	            on_release: app.open_settings()
+	        ActionButton:
+	            text: 'Exit'
+	            icon: 'atlas://data/images/defaulttheme/cancel'
+	            on_release: app.stop()
+
+	ScaleLabel:
+		id: karlabel
+		markup: True
+		halign: "center"
+		valign: "middle"
+
+	Image:
+		id: image
+		source: "atlas://data/images/defaulttheme/banner"
+
+	Toolbar:
+		id: toolbar
+    	pos_hint: {'bottom':1}
+    	size_hint_y: None
+    	height: 40
+    	left: left
+    	center: center
+    	right: right
+
+	    canvas:
+	        Color:
+	            rgba: [1, 1, 1, 1]
+	        BorderImage:
+	            border: [2, 2, 2, 2]
+	            pos: self.pos
+	            size: self.size
+	            source: 'atlas://data/images/defaulttheme/action_bar_bottom'
+
+		ToolbarSection:
+			id: left
+			size_hint_x: None
+			position: "left"
+
+			MultiActionButton:
+				id: playpause
+				size_hint_x: None
+				icon: "atlas://data/images/defaulttheme/media-playback-start"
+				action: "play"
+
+
+		########## SPACER ###########
+		BoxLayout:
+			orientation: "horizontal"
+		#############################
+
+		ToolbarSection:
+			id: center
+			position: "center"
+
+		########## SPACER ###########
+		BoxLayout:
+			orientation: "horizontal"
+		#############################
+
+		ToolbarSection:
+			position: "right"
+			orientation: "horizontal"
+			#size_hint_x: None
+			anchor_x: "right"
+			anchor_y: "bottom"
+			id: right
+
+        	SliderButton:
+        		id: volume
+        		type: "volume"
+        		label: "Volume"
+        		percentage: 50
+        		height: 40
+        		size_hint_y: None
+
+        	SliderButton:
+        		id: pitch
+        		type: "pitch"
+        		label: "Pitch"
+        		percentage: 50
+        		height: 40
+        		size_hint_y: None
+
+        	SliderButton:
+        		id: speed
+        		type: "speed"
+        		label: "Speed"
+        		percentage: 50
+        		height: 40
+        		size_hint_y: None
