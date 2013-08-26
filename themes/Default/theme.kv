@@ -97,15 +97,15 @@
 
 		ToolbarSection:
 			id: left
-			size_hint_x: None
+			size_hint_x: 1
 			position: "left"
 
 			MultiActionButton:
 				id: playpause
-				size_hint_x: None
 				icon: "atlas://data/images/defaulttheme/media-playback-start"
 				action: "play"
 
+			Widget
 
 		########## SPACER ###########
 		BoxLayout:
@@ -115,6 +115,9 @@
 		ToolbarSection:
 			id: center
 			position: "center"
+			size_hint_x: None
+
+			#Widget
 
 		########## SPACER ###########
 		BoxLayout:
@@ -124,10 +127,12 @@
 		ToolbarSection:
 			position: "right"
 			orientation: "horizontal"
-			#size_hint_x: None
+			size_hint_x: 1
 			anchor_x: "right"
 			anchor_y: "bottom"
 			id: right
+
+			Widget
 
         	SliderButton:
         		id: volume

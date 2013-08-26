@@ -17,34 +17,39 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.    If not, see <http://www.gnu.org/licenses/>.
 
+__version__ = "0.2"
+
 APP_NAME = "Karaokivy"
 APP_NAME_SHORT = "karaokivy"
-DOTTED_APP_NAME = "org.bashkaraoke.karaokivy"
-APP_VERSION = "0.1"
-SUPPORTED_FILES = ["*.mid", "*.midi", "*.MID", "*.MIDI", "*.kar", "*.KAR"]
+APP_DOMAIN = "org.davideddu.karaokivy"
+APP_VERSION = __version__
+
+
+# To be removed
+SUPPORTED_FILES = ["*.mid", "*.midi", "*.MID", "*.MIDI", "*.kar", "*.KAR", "*.mp3"]
 
 LABEL_TEXT = """Karaokivy"""
 
-import os, sys, argparse, shutil, subprocess
+import os, sys, argparse, imp, misc, shutil, subprocess
 join, exists = os.path.join, os.path.exists
 
-from bashkaraoke import misc
+from ui import *
+from plugin_utils import PluginManager
 
 import kivy
 from kivy import metrics, resources
-
 from kivy.app import App
 from kivy.atlas import Atlas
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.core.window import Window
+from kivy.event import EventDispatcher
 from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.properties import NumericProperty, BoundedNumericProperty,\
                             ObjectProperty, StringProperty, DictProperty,\
                             ListProperty, OptionProperty
 from kivy.utils import platform as core_platform
-platform = core_platform()
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.bubble import Bubble, BubbleButton
 from kivy.uix.button import Button
@@ -55,49 +60,64 @@ from kivy.uix.popup import Popup
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.spinner import Spinner
 from kivy.uix.widget import Widget
+from kivy.utils import platform as core_platform
+# Might be win, linux, android, macosx, ios, unknown
+platform = core_platform()
 
-from ui import *
 
-#try:
-#    import gettext
-#    gettext.bindtextdomain('bashkaraoke-gtk')
-#    gettext.textdomain('bashkaraoke-gtk')
-#    from gettext import gettext as _
-#except:
-#    # This method is defined if gettext is not available
-def _(msg, arg1=None, arg2=None, arg3=None):
-    return str(msg
-)
+if platform == "android":
+    import android
+    from jnius import autoclass
+    Environment = autoclass("android.os.Environment")
+    ContextWrapper = autoclass("android.content.ContextWrapper")
 
-class Container(object):
-    pass
-container = Container()
+distro = None
+if platform == "linux":
+    dpkg = subprocess.Popen(["which", "dpkg"])
+    rpm = subprocess.Popen(["which", "rpm"])
+    pacman = subprocess.Popen(["which", "pacman"])
+    dpkg.wait()
+    rpm.wait()
+    pacman.wait()
+    if not dpkg.poll():
+        distro = "debian"
+    elif not rpm.poll():
+        distro = "redhat"
+    elif not pacman.poll():
+        distro = "arch"
+    else:
+        distro = "other"
+
 
 curdir = os.path.dirname(os.path.realpath(__file__))
 themedir = join(curdir, "themes/Default/")
 
+# check_env
 def check_env():
-    if not exists(join(misc.home, ".config/karaokivy")):
-        os.makedirs(join(misc.home, ".config/karaokivy"))
-    if not exists(join(misc.home, ".local/share/karaokivy")):
-        os.makedirs(join(misc.home, ".local/share/karaokivy"))
-
-    #
-    # if not exists(join(misc.home, ".config/bashkaraoke/")):
-    #     if exists(join(misc.home, ".bashkaraoke")):
-    #         shutil.move(join(misc.home, ".bashkaraoke"), join(misc.home, ".config/bashkaraoke"))
-    #     else:
-    #         os.mkdir(join(misc.home, ".config/bashkaraoke/"))
-    # with open(join(misc.home, ".config/bashkaraoke/.pid"), "w") as pid:
-    #     pid.write('BK_OUT-NOT-STARTED')
-    # with open(join(misc.home, ".config/bashkaraoke/.time"), "w") as time:
-    #     time.write('')
-    # if not exists(join(misc.home, ".config/bashkaraoke/database.txt")):
-    #     with open(join(misc.home, ".config/bashkaraoke/database.txt"), "w") as db:
-    #         db.write("[Bash!Karaoke Database]\n")
-    # with open(join(misc.home, ".config/bashkaraoke/database.txt"), "r") as db:
-    #     global old_db
-    #     old_db = not "[Bash!Karaoke Database]" in db.read()
+    """
+    Checks if the needed directory are available and returns True if
+    it's all ok, or a string that will be shown before exiting
+    """
+    if platform in ("linux", "macosx"):
+        if not exists(join(misc.home, ".config/karaokivy")):
+            os.makedirs(join(misc.home, ".config/karaokivy"))
+        if not exists(join(misc.home, ".local/share/karaokivy")):
+            os.makedirs(join(misc.home, ".local/share/karaokivy"))
+        return True
+    elif platform == "win":
+        if not exists(join(os.environ["APPDATA"], "Karaokivy")):
+            os.makedirs(join(os.environ["APPDATA"], "Karaokivy"))
+        return True
+    elif platform == "android":
+        if Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED:
+            return "SD Card or internal storage not found.\nMake sure there is an SD card inserted and mounted,\nor that the internal storage is mounted."
+        else:
+            sdcard = Environment.getExternalStorageDirectory()
+            if not exists(join(sdcard, ".karaokivy")):
+                os.makedirs(join(sdcard, ".karaokivy"))
+            return True
+    else:
+        return "Your platform is not supported yet (detected platform: {0}).\nIf you think this is a bug, please contact me by filling the form in my website:\nhttp://davideddu.tuxfamily.org/contact.php\n\nThank you.".format(platform)
 
 class Karaokivy(App):
     use_kivy_settings = False
@@ -107,7 +127,9 @@ class Karaokivy(App):
     pitch = BoundedNumericProperty(50, min=0, max=100)
     theme = StringProperty("Default")
     themepath = StringProperty("")
-    # "nfl" means no file loaded
+    # FIXME
+    plugin_scope = OptionProperty("main_window", options=("main_window", "lyrics_window", "remote_control_window"))
+    # "nfl" means "no file loaded"
     state = OptionProperty("nfl", options=["nfl", "stop", "play", "pause", "busy"])
     file = StringProperty("")
     curdir = curdir
@@ -128,6 +150,8 @@ class Karaokivy(App):
                   "on_pbresume")
 
     def build(self):
+        self.dispatch("on_gui_build")
+
         self.root = Root()
 
         self.karlabel = self.root.karlabel
@@ -137,25 +161,11 @@ class Karaokivy(App):
         Config.set("graphics", "fullscreen", self.config.get("Karaokivy", "fullscreen"))
         Config.write()
 
-        self.dispatch("on_gui_build")
-
         self.root.remove_widget(self.karlabel)
 
         self.root.volume.bind(percentage=self.setter("volume"))
         self.root.pitch.bind(percentage=self.setter("pitch"))
         self.root.speed.bind(percentage=self.setter("speed"))
-
-        # self.menu_button = Button(background_normal="atlas://data/images/defaulttheme/menu_normal", background_down="atlas://data/images/defaulttheme/menu_down", size_hint=(None, None), size=(40, 40), pos_hint={"right":0.5})
-        # self.menu = DropDown(auto_width=False, width="100dp", dismiss_on_select=True)
-        # self.menu.add_widget(Button(text="Open...", on_release=self.open_file_dialog, size_hint_y=None, height=40))
-        # self.menu.add_widget(Button(text="Settings", on_release=self.open_settings, size_hint_y=None, height=40))
-        # self.menu.add_widget(Button(text="Exit", on_release=self.stop, size_hint_y=None, height=40))
-        
-        # self.menu_button.bind(on_release=self.menu.open)
-
-        #self.tb.right.add_widget(self.menu_button)
-
-        #self.tb.right.anchor_x = "right"
 
         self.dispatch("on_gui_built")
 
@@ -166,36 +176,17 @@ class Karaokivy(App):
         Config.app = self
 
         config.adddefaultsection("Karaokivy")
-        config.adddefaultsection("BashKaraoke")
         config.setdefaults("Karaokivy", {
             "theme":        "Default",
             "fullscreen":   "no",
+            "dual_screen":  "off",
             "bg_type":      "Color",
             "bg_image":     "",
+            "bg_color":     "#000000",
             "sung_color":   "#FF0000",
             "tosing_color": "#00FF00",
-            "midi_player":  "Bash!Karaoke"})
-        config.setdefaults("BashKaraoke", {
             "font_family":  "sans-serif",
-            "background":   "#000000",
-            "foreground_1": "green",
-            "foreground_2": "red",
-            "soundfont":    "",
-            "supermode":    "auto",
-            "use_gtk":      "false",
-            "use_gsw":      "false",
-            "use_buc":      "false",
-            "extract_way":  "internal",
-            "error_correction_chars": "0",
-            "columns":      "24",
-            "rows":         "3",
-            "LANG":         "en_US.UTF-8",
-            "char_encoding": "ISO-8859-1",
-            "delimiter":    "______________________________________________",
-            "karaoke_window": "true",
-            "levels_window": "true",
-            "channels_window": "false",
-            "spectrogram_window": "false"})
+            "soundfont":    ""})
 
         self.theme = str(self.config.get("Karaokivy", "theme"))
         self.themepath = self.get_theme_path(self.theme)
@@ -205,8 +196,6 @@ class Karaokivy(App):
 
         if os.path.exists(kv):
             self.load_kv(kv)
-
-        self.dispatch("on_load_plugins")
 
     def build_settings(self, settings):
         settings.register_type("color", SettingColor)
@@ -222,24 +211,36 @@ class Karaokivy(App):
             settings.add_json_panel('Appearance', self.config, data=json)
         with open(join(curdir, "sound.json"), "r") as json:
             settings.add_json_panel('Sound', self.config, data=json.read())
-        with open(join(curdir, "bashkaraoke.json"), "r") as j:
-            json = j.read()
-            locales = str(subprocess.check_output(["locale", "-a"])).split("\n")[:-1]
-            json = json.replace("#!?!?!?#", jsonize_list(locales))
-            settings.add_json_panel('Advanced', self.config, data=json)
 
         settings.bind(on_config_change=self.on_config_change)
 
-    def on_config_change(self, settings, config, section, key, value):
-        if section == "graphics" and key == "fullscreen":
-            config.app.config.set("Karaokivy", key, (value in ("auto", "yes", "1", "fake") and "auto" or "0"))
-            config.app.config.write()
-        elif section == "Karaokivy" and key == "fullscreen":
-            Config.set("graphics", key, value)
-            Config.write()
-        elif section == "Karaokivy" and key == "theme":
-            with open(join(os.path.dirname(self.get_application_config()), "theme"), "w") as theme:
-                theme.write(value)
+        self.dispatch("on_load_plugins")
+
+        self.pm = PluginManager(scope=self.plugin_scope, app_domain=APP_DOMAIN, curdir=curdir)
+
+        plugpanel = PluginsPanel(title="Plug-ins")
+        for plugin in self.pm.available_plugins.keys():
+            plugpanel.plugins_box.add_widget(PluginItem(manifest=self.pm.available_plugins[plugin]))
+
+        settings.add_widget(plugpanel)
+
+
+
+    def on_config_change(self, *args, **kwargs): # config, section, key, value):
+        #print args, kwargs
+        try:
+            section = args[-3]
+            key = args[-2]
+            value = args[-1]
+
+            if section == "graphics" and key == "fullscreen":
+                self.config.set("Karaokivy", key, (value in ("auto", "yes", "1", "fake") and "auto" or "0"))
+                self.config.write()
+            elif section == "Karaokivy" and key == "fullscreen":
+                Config.set("graphics", key, value)
+                Config.write()
+        except IndexError:
+            print args, kwargs
 
     def on_load_plugins(self):
         pass
@@ -279,12 +280,6 @@ class Karaokivy(App):
         elif self.state == "playing":
             self.dispatch("on_pbpause")
 
-    def ui_previous(self, button):
-        print "Previous"
-
-    def ui_next(self, button):
-        print "Next :)"
-
     def open_file_dialog(self, *args, **kwargs):
         print self.root.children
         content = BoxLayout(orientation="vertical")
@@ -305,10 +300,9 @@ class Karaokivy(App):
         except: pass
         self.root.add_widget(self.image)
         #self.root.add_widget(self.karlabel)
-        self.karlabel.text = ""
+        self.karlabel.text = "Karaokivy"
         #self.karlabel.font_name = font_manager.findfont("OpenComicFont", fallback_to_default=True)
-        self.tb_playpause.background_normal = "atlas://data/images/defaulttheme/play_normal"
-        self.tb_playpause.background_down = "atlas://data/images/defaulttheme/play_down"
+        self.tb_playpause.icon = "atlas://data/images/defaulttheme/media-playback-start"
 
 
     def open_file(self, instance=None, value=None, file=None):
@@ -322,34 +316,84 @@ class Karaokivy(App):
         self.dispatch("on_file_opened", self.file)
 
     def get_theme_path(self, theme):
-        if exists(join(misc.home, ".local/share/karaokivy/themes", theme)):
-            return join(misc.home, ".local/share/karaokivy/themes", theme)
-        elif exists(join(sys.prefix, "share/karaokivy/themes", theme)):
-            return join(sys.prefix, "share/karaokivy/themes", theme)
-        elif exists(join(sys.prefix, "local/share/karaokivy/themes", theme)):
-            return join(sys.prefix, "local/share/karaokivy/themes", theme)
-        else:
+        if platform == "linux":
+            if exists(join(misc.home, ".local/share/karaokivy/themes", theme)):
+                return join(misc.home, ".local/share/karaokivy/themes", theme)
+            elif exists(join(sys.prefix, "local/share/karaokivy/themes", theme)):
+                return join(sys.prefix, "local/share/karaokivy/themes", theme)
+            elif exists(join(sys.prefix, "share/karaokivy/themes", theme)):
+                return join(sys.prefix, "share/karaokivy/themes", theme)
+            elif exists(join(curdir, "themes", theme)):
+                return join(curdir, "themes", theme)
+        elif platform == "win":
+            if exists(join(os.environ["APPDATA"], "Karaokivy/themes", theme)):
+                return join(os.environ["APPDATA"], "Karaokivy/themes", theme)
+            elif exists(join(curdir, "themes", theme)):
+                return join(curdir, "themes", theme)
+        elif platform == "android":
+            sdcard = Environment.getExternalStorageDirectory()
+            if exists(join(sdcard, ".karaokivy/themes")):
+                return join(sdcard, ".karaokivy/themes")
+            elif exists(join(curdir, "themes", theme)):
+                return join(curdir, "themes", theme)
+        elif platform == "macosx":
+            if exists(join(misc.home, ".karaokivy/themes")):
+                return join(misc.home, ".karaokivy/themes")
+            elif exists(join(curdir, "themes", theme)):
+                return join(curdir, "themes", theme)
+        if theme != "Default":
             try:
                 p = self.get_theme_path("Default")
                 return p
             except:
                 return None
-
-    def get_application_config(self, defaultpath='%(appdir)s/%(appname)s.ini'):
-        if platform == 'android':
-            defaultpath = '/sdcard/.%(appname)s.ini'
-        elif platform == 'ios':
-            defaultpath = '~/Documents/%(appname)s.ini'
-        elif platform == 'win':
-            defaultpath = join(os.environ["APPDATA"], "Karaokivy", "karaokivy.ini")
         else:
-            defaultpath = '~/.config/karaokivy/settings.ini'
-        return os.path.expanduser(defaultpath) % {'appname': "karaokivy", 'appdir': self.directory}
+            return None
+
+    @staticmethod
+    def get_config(filename="settings.ini"):
+        if platform == 'android':
+            filesdir = ContextWrapper.getFilesDir()
+            try:
+                # Check if it's writable, otherwise use SD card
+                with open(join(filesdir, "does_not_exist"), "w") as f:
+                    f.write("Hello world!")
+                os.remove(join(filesdir, "does_not_exist"))
+
+                return join(filesdir, filename)
+            except OSError, IOError:
+                return '/sdcard/.karaokivy/{0}'.format(filename)
+        elif platform == 'ios':
+            return os.path.expanduser('~/Documents/karaokivy/{0}'.format(filename))
+        elif platform == 'win':
+            return os.path.expanduser(join(os.environ["APPDATA"], "Karaokivy", filename))
+        elif platform == "linux":
+            return os.path.expanduser('~/.config/karaokivy/{0}'.format(filename))
+        elif platform == "macosx":
+            return os.path.expanduser("~/.karaokivy/{0}".format(filename))
+        else:
+            return "~/.karaokivy/{0}".format(filename)
+
+    def get_application_config(self, defaultpath=None):
+        return self.get_config("settings.ini")
 
     def on_stop(self, *args):
         for i in self.fmthumbs.values():
             os.remove(i)
         self.fmthumbs = {}
+
+class FallbackApp(App):
+    message = StringProperty("")
+    def build(self):
+        root = BoxLayout(orientation="vertical")
+        content = BoxLayout(orientation="vertical")
+        label = Label(text=self.message, halign="center")
+        btn = Button(text="Exit", size_hint_y=None, height="40dp", on_release=self.stop)
+        content.add_widget(label)
+        content.add_widget(btn)
+        self.popup = Popup(size_hint=(.8, .5), title="Karaokivy", content=content, on_dismiss=self.stop)
+        Clock.schedule_once(self.popup.open)
+        return root
 
 def uniq(seq):
     seen = set()
@@ -376,5 +420,8 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--reset-settings", dest="reset", default=False, action='store_true', required=False, help="Resets settings to default.")
     parser.add_argument("-V", '--version', action='version', help="Displays the current version and exits", version='{0} {1}'.format(APP_NAME, APP_VERSION))
     args = parser.parse_args()
-    check_env()
-    Karaokivy().run()
+    ret = check_env()
+    if ret == True:
+        Karaokivy().run()
+    else:
+        FallbackApp(message=ret).run()

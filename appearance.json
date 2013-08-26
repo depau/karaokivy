@@ -12,7 +12,7 @@
     { "type":    "font",
       "title":   "Font family",
       "desc":    "The font used for the lyrics",
-      "section": "BashKaraoke",
+      "section": "Karaokivy",
       "key":     "font_family"},
 
     { "type":    "options",
@@ -30,24 +30,11 @@
       "key":     "bg_image",
       "disabled": true},
 
-    { "type":    "title",
-      "title":   "Video" },
-
-    { "type":    "bool",
-      "title":   "Fullscreen",
-      "desc":    "Needs restart. May not work with more that one monitor.",
-      "section": "Karaokivy",
-      "key":     "fullscreen",
-      "values":  ["0", "auto"]},
-
-    { "type":    "title",
-      "title":   "Colors" },
-
     { "type":    "color",
       "title":   "Background color",
       "desc":    "The color used behind the text",
-      "section": "BashKaraoke",
-      "key":     "background"},
+      "section": "Karaokivy",
+      "key":     "bg_color"},
 
     { "type":    "color",
       "title":   "Sung lyrics color",
@@ -59,5 +46,23 @@
       "title":   "To sing lyrics color",
       "desc":    "The color of the words that you haven't sung yet",
       "section": "Karaokivy",
-      "key":     "tosing_color"}
+      "key":     "tosing_color"},
+
+    { "type":    "title",
+      "title":   "Video" },
+
+    { "type":    "bool",
+      "title":   "Fullscreen",
+      "desc":    "Needs restart. May not work with more that one monitor.",
+      "section": "Karaokivy",
+      "key":     "fullscreen",
+      "values":  ["0", "auto"]},
+
+    { "type":    "bool",
+      "title":   "Dual-screen mode",
+      "desc":    "Needs restart.",
+      "section": "Karaokivy",
+      "key":     "dual_screen",
+      "disabled": true,
+      "values":  ["on", "off"]}
 ]

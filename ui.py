@@ -20,7 +20,7 @@ import os, sys, json, mimetypes, subprocess, traceback
 mimetypes.add_type("image/jpeg", ".JPG")
 mimetypes.add_type("image/jpg", ".jpg")
 mimetypes.add_type("image/jpeg", ".jpg")
-from os.path import dirname, basename, join, exists
+from os.path import dirname, basename, join, exists, normpath, isdir
 from mutagen.id3 import ID3
 from mutagen.flac import FLAC
 from tempfile import mktemp
@@ -33,54 +33,64 @@ from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from kivy.properties import NumericProperty, BoundedNumericProperty,\
 						    ObjectProperty, StringProperty, DictProperty,\
-						    ListProperty, OptionProperty
+						    ListProperty, OptionProperty, BooleanProperty
 from kivy.resources import resource_find
-from kivy.utils import get_color_from_hex
+from kivy.utils import get_color_from_hex, platform as core_platform
 from kivy.uix.actionbar import ActionButton, ActionBar, ActionView, ActionOverflow, ActionGroup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.bubble import Bubble, BubbleButton
 from kivy.uix.button import Button
 from kivy.uix.colorpicker import ColorPicker
-from kivy.uix.filechooser import FileChooserController, FileChooserIconView
+from kivy.uix.filechooser import FileChooserController, FileChooserIconView, FileChooserListView
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.image import AsyncImage
 from kivy.uix.label import Label
 from kivy.uix.listview import ListItemButton, ListView
+from kivy.uix.modalview import ModalView
 from kivy.uix.popup import Popup
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.settings import SettingItem, SettingSpacer
+from kivy.uix.settings import SettingItem, SettingSpacer, SettingsPanel
 from kivy.uix.slider import Slider
 from kivy.uix.switch import Switch
 from kivy.uix.textinput import TextInput
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 
-# "opsys" is set to "android" if running on an Android Linux device,
-# to "linux" if running on a generic GNU/Linux or BSD distro, to "macosx"
-# if running on a Mac and to "win" if running on Windows.
-opsys = "linux"
+platform = core_platform()
 
 def hide_keyboard(*args, **kwargs):
     pass
 
-try: 
+if platform == "android":
     import android
-    print "Running an Android device"
-    android.init()
-    #browser = android.AndroidBrowser()
-    opsys = "android"
+    from jnius import autoclass
     def hide_keyboard(*args, **kwargs):
         android.hide_keyboard()
-except ImportError:
-    if sys.platform.startswith('darwin'):
-        opsys = "macosx"
-    elif os.name == 'nt':
-        opsys = "win"
-    elif os.name == "posix":
-        opsys = "linux"
+
+def open_url(url):
+    if platform == "macosx":
+        subprocess.Popen(['open', url])
+    elif platform == 'win':
+        os.startfile(url)
+    elif platform == "linux":
+        subprocess.Popen(['xdg-open', url])
+    elif platform == "android":
+        android.open_url(url)
+
+def open_email(email):
+    if platform == "macosx":
+        subprocess.Popen(['open', "mailto:" + email])
+    elif platform == 'win':
+        os.startfile("mailto:" + email)
+    elif platform == "linux":
+        subprocess.Popen(['xdg-open', "mailto:" + email])
+    elif platform == "android":
+        android.open_url("mailto:" + email)
 
 # Took from Python 2.7 "user" module; Android support added
 home = os.curdir                        # Default
-if opsys == "android":
+if platform == "android":
     home = "/mnt/sdcard"
 elif 'HOME' in os.environ:
     home = os.environ['HOME']
@@ -113,7 +123,6 @@ class ToolbarSection(BoxLayout):
 
     # A quick and dirty way to add new widgets between the spacers
     def add_widget(self, widget, index=None):
-        print "SPACING", self.position
         if self.spacers[0]:
             for i in self.spacers:
                 self.remove_widget(i)
@@ -182,12 +191,6 @@ class SliderButton(ActionButton):
 
     def __init__(self, **kwargs):
         super(SliderButton, self).__init__(**kwargs)
-        if self.type == "volume":
-            self.reset_value = 0
-            self.reset_text = "Mute"
-        else:
-            self.reset_value = 50
-            self.reset_text = "Reset"
 
         App.get_running_app().bind(on_start=self.update_icons)
         self.bind(on_release=self._open)
@@ -200,27 +203,35 @@ class SliderButton(ActionButton):
             del self.bubble, self.slider
             self.update_icons()
         except AttributeError:
-            bubble = Bubble(orientation="vertical", pos=(self.pos[0], self.pos[1] + 48), size=(48, 200))
+            self.bubble = Bubble(orientation="vertical", size=(48, 200))
+            self.update_bubble_pos()
+            self.bind(pos=self.update_bubble_pos)
             def on_perc(slider, value):
                 slider.btn.percentage = value
             label = Label(text=self.label, size_hint_y=None, height=25)
-            bubble.add_widget(label)
+            self.bubble.add_widget(label)
             self.slider = Slider(orientation="vertical", min=0, max=100, value=self.percentage)
             self.slider.btn = self
             self.slider.bind(value=on_perc)
-            bubble.add_widget(self.slider)
+            self.bubble.add_widget(self.slider)
             def on_reset(bbtn, *args, **kwargs):
                 bbtn.slider.value = bbtn.reset_value
             bbtn = BubbleButton(text=self.reset_text, size_hint_y=None, height=40)
             bbtn.slider = self.slider
             bbtn.reset_value = self.reset_value
             bbtn.bind(on_release=on_reset)
-            bubble.add_widget(bbtn)
-            self.add_widget(bubble)
-            self.bubble = bubble
+            self.bubble.add_widget(bbtn)
+            self.add_widget(self.bubble)
             self.icon = self.icons["close"]
 
     def update_icons(self, *args, **kwargs):
+        if self.type == "volume":
+            self.reset_value = 0
+            self.reset_text = "Mute"
+        else:
+            self.reset_value = 50
+            self.reset_text = "Reset"
+
         if self.percentage == 0:
                 self.icon = self.icons[self.type]["none"]
         elif self.percentage > 0 and self.percentage < 33:
@@ -229,6 +240,9 @@ class SliderButton(ActionButton):
                 self.icon = self.icons[self.type]["medium"]
         elif self.percentage > 66 and self.percentage <= 100:
                 self.icon = self.icons[self.type]["high"]
+
+    def update_bubble_pos(self, *args):
+        self.bubble.pos = (self.pos[0], self.pos[1] + 48)
 
 class DavColorPicker(ColorPicker):
     text = StringProperty("")
@@ -389,9 +403,11 @@ class SettingSoundFont(SettingItem):
             content=content, size_hint=(None, None), size=(400, 400))
 
         # create the filechooser
-        self.textinput = textinput = FileChooserListView(path=str(self.value),
-                                                         size_hint=(1, 1),
+        self.textinput = textinput = FileChooserListView(size_hint=(1, 1),
                                                          dirselect=False, filters=["*.sf2"])
+        if str(self.value) not in ("", "None"):
+            self.textinput.path = os.path.dirname(str(self.value))
+
         textinput.bind(on_path=self._validate)
         self.textinput = textinput
 
@@ -568,7 +584,7 @@ class FileChooserArtView(FileChooserController):
                         to_return = 'atlas://data/images/mimetypes/audio_flac'
                 elif "video/" in mime:
                     data = None
-                    print "ffmpeg:", exec_exists("ffmpeg"), "- avconv:", exec_exists("avconv")
+                    #print "ffmpeg:", exec_exists("ffmpeg"), "- avconv:", exec_exists("avconv")
                     if exec_exists("avconv"):
                         data = subprocess.Popen(['avconv', '-i', ctx.path, '-an', '-vcodec', 'png', '-vframes', '1', '-ss', '00:00:01', '-y', '-f', 'rawvideo', '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
                     elif exec_exists("ffmpeg"):
@@ -631,46 +647,47 @@ class KKFileChooser(BoxLayout):
         self.chooser.bind(selection=self.on_file_select, path=self.setter("path"), thumbs=self.setter("thumbs"))
         self.fileentry = TextInput(size_hint_y=None, height="30dp", text=self.filename, multiline=False)
         self.fileentry.bind(text=self.setter("filename"))
-        # self.davbar = BoxLayout(orientation="horizontal", size_hint_y=None, height="45dp", spacing="5dp")
-        # self.levelup = Button(on_press=hide_keyboard, on_release=self.on_levelup, height=40, width=40, size_hint=(None, None), background_normal="atlas://data/images/defaulttheme/levelup_normal", background_down="atlas://data/images/defaulttheme/levelup_down")
-        # self.edit = Button(on_press=hide_keyboard, on_release=self.on_edit, height=40, width=40, size_hint=(None, None), background_normal="atlas://data/images/defaulttheme/edit_normal", background_down="atlas://data/images/defaulttheme/edit_down")
-        # self.newdir = Button(on_press=hide_keyboard, on_release=self.on_newdir, height=40, width=40, size_hint=(None, None), background_normal="atlas://data/images/defaulttheme/newdir_normal", background_down="atlas://data/images/defaulttheme/newdir_down")
-        # self.davbar.add_widget(self.levelup)
-        # self.davbar.add_widget(self.edit)
 
-        # scroll = ScrollView(pos_hint={'center_x': .5, 'center_y': .42}, do_scroll_y=False, size_hint=(1, 1))
-        # self.navbar = GridLayout(cols=1, orientation="horizontal", spacing=5, padding=[5, 0, 0, 0])
-        # self.navbar.bind(minimum_width=self.navbar.setter('width'))
-        # scroll.add_widget(self.navbar)
+        self.gen_actionbar()
 
-        # self.davbar.add_widget(scroll)
-        # self.davbar.add_widget(self.newdir)
+        self.chooser.bind(path=self.on_path)
+        self.on_path(None, self.path)
 
+        self.add_widget(self.fileentry)
+        self.add_widget(self.chooser)
+
+
+    def gen_actionbar(self):
         self.davbar = ReadyActionBar()
         self.actionview = self.davbar.actview
         self.levelup = ActionButton(on_press=hide_keyboard, on_release=self.on_levelup, icon="atlas://data/images/defaulttheme/levelup", text="One level up")
         self.edit = ActionButton(on_press=hide_keyboard, on_release=self.on_edit, icon="atlas://data/images/defaulttheme/edit", text="Edit path")
         self.newdir = ActionButton(on_press=hide_keyboard, on_release=self.on_newdir, icon="atlas://data/images/defaulttheme/newdir", text="New folder")
-        self.pathgroup = ActionGroup(text="Path")
         self.actionview.add_widget(self.levelup)
         self.actionview.add_widget(self.newdir)
         self.actionview.add_widget(self.edit)
-        self.actionview.add_widget(self.pathgroup)
-
-        self.chooser.bind(path=self.on_path)
-        self.on_path(None, self.path)
-
-        self.add_widget(self.davbar)
-        self.add_widget(self.fileentry)
-        self.add_widget(self.chooser)
+        self.add_widget(self.davbar, len(self.children))
 
     def on_path(self, instance, path):
-        print "ONPATH"
-        splitpath = os.path.abspath(path).split(os.sep)
-        self.pathgroup.clear_widgets()
-        if splitpath[0] == "":
-            splitpath[0] = os.sep
-        print splitpath
+        #print "ONPATH"
+        try:
+            self.remove_widget(self.davbar)
+        except:
+            pass
+        self.gen_actionbar()
+
+        self.pathgroup = ActionGroup(text="Path")
+        self.actionview.add_widget(self.pathgroup)
+
+        seq = os.path.abspath(normpath(path)).split(os.sep)
+        splitpath = []
+
+        if platform != "win":
+            splitpath.append("/")
+
+        for i in seq:
+            if i != "":
+                splitpath.append(i)
 
         for i in splitpath:
             if i != "":
@@ -693,8 +710,9 @@ class KKFileChooser(BoxLayout):
         cancel = Button(text="Cancel", on_press=hide_keyboard, on_release=self.popup.dismiss, height=40, size_hint_y=None)
         buttonbox.add_widget(ok)
         buttonbox.add_widget(cancel)
-        self.direntry = TextInput(height=30, size_hint_y=None, on_text_validate=self.cd, multiline=False)
-        content.add_widget(Widget())
+        self.direrror = Label(markup=True, text="")
+        self.direntry = TextInput(height=30, size_hint_y=None, on_text_validate=self.cd, multiline=False, focus=True)
+        content.add_widget(self.direrror)
         content.add_widget(self.direntry)
         content.add_widget(Widget())
         content.add_widget(buttonbox)
@@ -708,8 +726,9 @@ class KKFileChooser(BoxLayout):
         cancel = Button(text="Cancel", on_press=hide_keyboard, on_release=self.popup.dismiss, height=40, size_hint_y=None)
         buttonbox.add_widget(ok)
         buttonbox.add_widget(cancel)
-        self.direntry = TextInput(height=30, size_hint_y=None, on_text_validate=self.mkdir, multiline=False)
-        content.add_widget(Widget())
+        self.direrror = Label(markup=True, text="")
+        self.direntry = TextInput(height=30, size_hint_y=None, on_text_validate=self.mkdir, multiline=False, focus=True)
+        content.add_widget(self.direrror)
         content.add_widget(self.direntry)
         content.add_widget(Widget())
         content.add_widget(buttonbox)
@@ -717,25 +736,20 @@ class KKFileChooser(BoxLayout):
 
     def mkdir(self, *args):
         #print "mkdir", join(self.chooser.path, self.direntry.text)
-        os.mkdir(join(self.chooser.path, self.direntry.text))
-        # This should make the view refresh
-        self.chooser.path = os.sep + self.chooser.path[:]
-        self.popup.dismiss()
+        try:
+            os.mkdir(join(self.chooser.path, self.direntry.text))
+            # This should make the view refresh
+            self.chooser.path = os.sep + self.chooser.path[:]
+            self.popup.dismiss()
+        except OSError, error:
+            self.direrror.text = str(error)
 
     def cd(self, *args):
-        if exists(self.direntry.text):
+        if exists(self.direntry.text) and isdir(self.direntry.text):
             self.chooser.path = self.direntry.text
             self.popup.dismiss()
         else:
-            global oldcolor, restore_color
-            oldcolor = self.direntry.selection_color[:]
-            self.direntry.selection_color = [1, 0.08627450980392157, 0.08627450980392157, 0.5]
-            self.direntry.select_all()
-            def restore_color(instance, value):
-                global oldcolor, restore_color
-                instance.selection_color = oldcolor
-                instance.unbind(selection=restore_color)
-            self.direntry.bind(selection=restore_color)
+            self.direrror.text = "The path doesn't exist"
 
     def navigate(self, button):
         #print "navigate", button.path
@@ -787,3 +801,162 @@ def atlas_texture_exists(uri):
         print "EXCEPTION IN atlas_texture_exists"
         
         traceback.print_exc()
+
+class PluginsPanel(SettingsPanel):
+    title = StringProperty("Plug-ins")
+    plugins_box = ObjectProperty(None)
+    def_players_box = ObjectProperty(None)
+    def_lrc_box = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault('cols', 1)
+        super(PluginsPanel, self).__init__(**kwargs)
+
+    def install_plugin(self, *args):
+        NotImplemented
+
+    def download_plugin(self, *args):
+        NotImplemented
+
+class PluginItem(FloatLayout):
+    title = StringProperty('<No title set>')
+    desc = StringProperty("")
+    icon = StringProperty("")
+    disabled = BooleanProperty(False)
+    stock = BooleanProperty(False)
+    manifest = ObjectProperty(None)
+    selected_alpha = NumericProperty(0)
+
+    __events__ = ('on_release',)
+
+    def __init__(self, **kwargs):
+        super(PluginItem, self).__init__(**kwargs)
+        self.bind(disabled=self.toggle)
+        self.titlebak = self.title[:]
+
+    def add_widget(self, *largs):
+        if self.content is None:
+            return super(PluginItem, self).add_widget(*largs)
+        return self.content.add_widget(*largs)
+
+    def on_touch_down(self, touch):
+        if not self.collide_point(*touch.pos):
+            return
+        if self.disabled:
+            return
+        touch.grab(self)
+        self.selected_alpha = 1
+        return super(PluginItem, self).on_touch_down(touch)
+
+    def toggle(self, *args):
+        if self.disabled:
+            self.title = "[i]" + self.titlebak + " (disabled)[/i]"
+        else:
+            self.title = self.titlebak
+
+    def on_touch_up(self, touch):
+        if touch.grab_current is self:
+            touch.ungrab(self)
+            self.dispatch('on_release')
+            Animation(selected_alpha=0, d=.25, t='out_quad').start(self)
+            return True
+        return super(PluginItem, self).on_touch_up(touch)
+
+    def on_release(self, *args):
+        # create popup layout
+        self.popup = PluginPopup(manifest=self.manifest, disabled=self.disabled)
+        self.popup.bind(disabled=self.setter("disabled"))
+        self.bind(disabled=self.popup.setter("disabled"))
+
+        # all done, open the popup !
+        popup.open()
+
+class PluginPopup(ModalView):
+    title_size = NumericProperty('14sp')
+    title_color = ListProperty([1, 1, 1, 1])
+    separator_color = ListProperty([47 / 255., 167 / 255., 212 / 255., 1.])
+    separator_height = NumericProperty('2dp')
+    manifest = ObjectProperty(None)
+    plugin_disabled = BooleanProperty(False)
+    infolabel = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        super(PluginPopup, self).__init__(**kwargs)
+        def repr_list(seq):
+            toret = ""
+            for i in seq:
+                toret += i + ", "
+            return toret[:-2]
+
+        def repr_purposes(seq):
+            toret = ""
+            dic = {"player":          "Player",
+                   "lyrics_provider": "Lyrics provider",
+                   "ui_expansion":    "Interface expansion",
+                   "feature":         "New feature"}
+            for i in seq:
+                try:
+                    toret += dic[i] + ", "
+                except KeyError:
+                    pass
+            return toret[:-2]
+
+        def repr_optional(manifest):
+            toret = ""
+            if "player" in manifest.purposes:
+                toret += "[b]Supported audio MIME types:[/b] {0}\n".format(repr_list(manifest.player.supported_mimes))
+            if "lyrics_provider" in manifest.purposes:
+                toret += "[b]Supported audio MIME types for lyrics:[/b] {0}\n".format(repr_list(manifest.lyrics_provider.supported_audio_mimes))
+                toret += "[b]Supported lyrics format:[/b] {0}\n".format(repr_list(manifest.lyrics_provider.supported_lrc_types))
+            return toret
+
+
+        def repr_authors(seq):
+            toret = ""
+            for i in seq:
+                if "homepage" in i.keys() and "email" in i.keys():
+                    toret += "[b]" + i["name"] + "[/b] ([ref=email{0}]e-mail[/ref], [ref=homepage{0}]homepage[/ref])\n".format(seq.index(i))
+                elif "homepage" in i.keys():
+                    toret += "[b]" + i["name"] + "[/b] ([ref=homepage{0}]homepage[/ref])\n".format(seq.index(i))
+                elif "email" in i.keys():
+                    toret += "[b]" + i["name"] + "[/b] ([ref=email{0}]e-mail[/ref])\n".format(seq.index(i))
+                else:
+                    toret +=  "[b]" + i["name"] + "[/b]\n"
+
+            return toret[:-1]
+
+        self.infolabel.text = """{manifest.long_description}
+
+[b]Name:[/b] {manifest.name}
+[b]Version:[/b] {manifest.version}
+[b]Required plugins:[/b] {depends_kk}
+[b]Required Python modules:[/b] {depends_py}
+[b]Purpose{0}:[/b] {purposes}
+{optional}
+{authors}
+
+[ref=homepage][b]Homepage[/b][/ref]""".format(
+            "s" if len(self.manifest.purposes) > 1 else "",
+            manifest=self.manifest, depends_kk=repr_list(self.manifest.depends_kk),
+            depends_py=repr_list(self.manifest.depends_py),
+            purposes=repr_list(self.manifest.purposes),
+            authors=repr_authors(self.manifest.authors),
+            optional=repr_optional(self.manifest)
+            )
+
+        self.infolabel.bind(on_ref_press=self.on_ref)
+
+    def on_ref(self, instance, value):
+        if value == "homepage":
+            open_url(self.manifest.homepage)
+        elif "email" in value:
+            index = int(value.replace("email", ""))
+            open_email(self.manifest.authors[index]["email"])
+        elif "homepage" in value:
+            index = int(value.replace("homepage", ""))
+            open_url(self.manifest.authors[index]["homepage"])
+
+    def on_touch_down(self, touch):
+        if self.disabled and self.collide_point(*touch.pos):
+            return True
+        return super(Popup, self).on_touch_down(touch)
