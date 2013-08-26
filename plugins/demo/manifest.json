@@ -1,0 +1,12 @@
+{
+	"name":						"org.davideddu.karaokivy.demo",
+	"title":					"Demo plugin for Karaokivy",
+	"version":					"0.1",
+	"short_description":		"A simple \"Hello World\" plugin for Karaokivy",
+	"long_description":			"A simple \"Hello World\" plugin for Karaokivy",
+	"homepage":					"http://davideddu.tuxfamily.org/wiki/Karaokivy",
+	"authors":					[{"name": "Davide Depau", "email": "david.dep.1996@gmail.com", "homepage": "http://davideddu.tuxfamily.org"}],
+	"platforms":				["all"],
+	"purposes":					["feature"],
+	"feature.scope":			["main_window", "lyrics_window", "remote_control_window"]
+} 
