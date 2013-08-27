@@ -1,5 +1,6 @@
 #:kivy 1.8.0
 #:import splitext os.path.splitext
+#:import basename os.path.basename
 
 <ColorBox@Button>:
 	background_normal: "atlas://data/images/defaulttheme/empty"
@@ -57,6 +58,259 @@
         pos: root.pos
         font_size: '15sp'
 
+<SettingSoundFont>:
+    label: label
+
+    Label:
+        id: label
+        text: basename(str(root.value))
+        pos: root.pos
+        font_size: '15sp'
+
+<PluginsPanel>:
+    spacing: 5
+    padding: 5
+    size_hint_y: None
+    height: self.minimum_height
+    plugins_box: plugins_box.__self__
+    def_players_box: def_players_box.__self__
+    def_lrc_box: def_lrc_box.__self__
+
+    TabbedPanel:
+        do_default_tab: False
+
+        TabbedPanelItem:
+            text: "Plug-ins"
+
+            ActionBar:
+                pos_hint: {'top':1}
+
+                ActionView:
+                    use_separator: True
+
+                    ActionPrevious:
+                        title: root.title
+                        with_previous: False
+                        app_icon: "atlas://data/images/defaulttheme/transparent"
+
+                    ActionOverflow
+
+                    ActionButton:
+                        text: "Install"
+                        on_release: root.install_plugin()
+
+                    ActionButton:
+                        text: "Download plugins"
+                        disabled: True
+                        on_release: root.download_plugin()
+
+            ScrollView:
+                size_hint: None, None
+                do_scroll_x: False
+
+                Scatter:
+                    do_rotation: False
+                    do_scale: False
+                    do_translation: False
+                    size_hint_y: None
+                    height: plugins_box.height
+
+                    BoxLayout:
+                        id: plugins_box
+                        size_hint_y: None
+                        orientation: "vertical"
+
+        TabbedPanelItem:
+            text: "Default players"
+
+            ActionBar:
+                pos_hint: {'top':1}
+
+                ActionView:
+                    use_separator: True
+
+                    ActionPrevious:
+                        title: "Default players"
+                        with_previous: False
+                        app_icon: "atlas://data/images/defaulttheme/transparent"
+
+                    ActionOverflow
+
+                    ActionButton:
+                        text: "Reset"
+                        on_release: root.reset_default_players()
+
+            ScrollView:
+                size_hint: None, None
+                do_scroll_x: False
+
+                Scatter:
+                    do_rotation: False
+                    do_scale: False
+                    do_translation: False
+                    size_hint_y: None
+                    height: def_players_box.height
+
+                    BoxLayout:
+                        id: def_players_box
+                        size_hint_y: None
+                        orientation: "vertical"
+
+        TabbedPanelItem:
+            text: "Default lyrics providers"
+
+            ActionBar:
+                pos_hint: {'top':1}
+
+                ActionView:
+                    use_separator: True
+
+                    ActionPrevious:
+                        title: "Default lyrics providers"
+                        with_previous: False
+                        app_icon: "atlas://data/images/defaulttheme/transparent"
+
+                    ActionOverflow
+
+                    ActionButton:
+                        text: "Reset"
+                        on_release: root.reset_default_lrc_providers()
+
+            ScrollView:
+                size_hint: None, None
+                do_scroll_x: False
+
+                Scatter:
+                    do_rotation: False
+                    do_scale: False
+                    do_translation: False
+                    size_hint_y: None
+                    height: def_lrc_box.height
+
+                    BoxLayout:
+                        id: def_lrc_box
+                        size_hint_y: None
+                        orientation: "vertical"
+
+<PluginItem>:
+    size_hint: .25, None
+    height: (labellayout.texture_size[1] if labellayout.texture_size[1] > 48 else 48) + dp(10)
+    content: content
+    title: self.manifest.title
+    desc: self.manifest.short_description
+    stock: self.manifest.stock
+
+    canvas:
+        Color:
+            rgba: 47 / 255., 167 / 255., 212 / 255., self.selected_alpha
+        Rectangle:
+            pos: self.x, self.y + 1
+            size: self.size
+        Color:
+            rgb: .2, .2, .2
+        Rectangle:
+            pos: self.x, self.y - 2
+            size: self.width, 1
+
+    AsyncImage:
+        source: root.icon != "" and root.icon or "atlas://data/images/defaulttheme/image-missing"
+        size_hint: None, None
+        size: ("48dp", "48dp")
+
+    BoxLayout:
+        pos: root.pos
+
+        Label:
+            size_hint_x: .66
+            id: labellayout
+            markup: True
+            text: u'{0}\n[size=13sp][color=999999]{1}[/color][/size]'.format(root.title or '', root.desc or '')
+            font_size: '15sp'
+            text_size: self.width - 32, None
+
+        BoxLayout:
+            id: content
+            size_hint_x: .33
+
+
+<CloseButton@ButtonBehavior+Image>
+    popup: None
+    source: 'atlas://data/images/defaulttheme/close'
+    on_release: self.popup.dismiss()
+
+<PluginPopup>:
+    infolabel: infolabel
+
+    GridLayout:
+        padding: 12
+        cols: 1
+        size_hint: None, None
+        pos: root.pos
+        size: root.size
+
+        CloseButton:
+            popup: root
+            x: root.x - (self.width / 2)
+            y: root.y - (self.width / 2)
+
+        BoxLayout:
+            orientation: "horizontal"
+
+            Label:
+                text: root.manifest.title + " [i]" + root.manifest.version + "[/i]"
+                markup: True
+                color: root.title_color
+                size_hint_y: None
+                height: self.texture_size[1] + 16
+                text_size: self.width - 16, None
+                font_size: root.title_size
+
+            Widget
+
+            Switch:
+                active: not root.plugin_disabled
+
+        Widget:
+            size_hint_y: None
+            height: 4
+            canvas:
+                Color:
+                    rgba: root.separator_color
+                Rectangle:
+                    pos: self.x, self.y + root.separator_height / 2.
+                    size: self.width, root.separator_height
+
+        GridLayout:
+            cols: 2
+            padding: dp(10)
+
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_x: None
+                width: dp(128)
+
+            ScrollView:
+                size_hint: None, None
+                do_scroll_x: False
+
+                Scatter:
+                    do_rotation: False
+                    do_scale: False
+                    do_translation: False
+                    size_hint_y: None
+                    height: infobox.height
+
+                    BoxLayout:
+                        id: infobox
+                        size_hint_y: None
+                        orientation: "vertical"
+
+                        Label:
+                            id: infolabel
+                            markup: True
+
+            
+
 
 <FileChooserArtView>:
     on_entry_added: stacklayout.add_widget(args[1])
@@ -98,7 +352,7 @@
     	orientation: "vertical"
     	min: 0
     	max: 1
-    	value: scrollview.scroll_y
+    	value: max(0, min(1, scrollview.scroll_y))
 
 [FileThumbEntry@Widget]:
     locked: False
