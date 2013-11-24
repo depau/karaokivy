@@ -8,7 +8,9 @@
 	background_disabled: "atlas://data/images/defaulttheme/empty"
 
 <IconButton@Button>:
-	icon: None
+	icon: "atlas://data/images/defaulttheme/transparent"
+    label: ""
+
     BoxLayout:
         pos: root.pos
         size: root.size
@@ -19,6 +21,7 @@
             source: root.icon
             size_hint: (.4, 1.)
         Label:
+            text: root.label
             size_hint: (.6, 1.)
             text_size: self.size
             halign: 'left'
@@ -70,131 +73,38 @@
 <PluginsPanel>:
     spacing: 5
     padding: 5
-    size_hint_y: None
-    height: self.minimum_height
     plugins_box: plugins_box.__self__
-    def_players_box: def_players_box.__self__
-    def_lrc_box: def_lrc_box.__self__
+    defaults_box: defaults_box.__self__
 
-    TabbedPanel:
+    AnimTabbedPanel:
         do_default_tab: False
+        size_hint_x: .25
+        orientation: "vertical"
+        #height: "500dp"
+
 
         TabbedPanelItem:
             text: "Plug-ins"
 
-            ActionBar:
-                pos_hint: {'top':1}
-
-                ActionView:
-                    use_separator: True
-
-                    ActionPrevious:
-                        title: root.title
-                        with_previous: False
-                        app_icon: "atlas://data/images/defaulttheme/transparent"
-
-                    ActionOverflow
-
-                    ActionButton:
-                        text: "Install"
-                        on_release: root.install_plugin()
-
-                    ActionButton:
-                        text: "Download plugins"
-                        disabled: True
-                        on_release: root.download_plugin()
-
-            ScrollView:
-                size_hint: None, None
-                do_scroll_x: False
-
-                Scatter:
-                    do_rotation: False
-                    do_scale: False
-                    do_translation: False
-                    size_hint_y: None
-                    height: plugins_box.height
-
-                    BoxLayout:
-                        id: plugins_box
-                        size_hint_y: None
-                        orientation: "vertical"
+            GridLayout:
+                id: plugins_box
+                cols: 1
+                spacing: 5
+                padding: 5
+                size_hint_y: None
+                height: self.minimum_height
 
         TabbedPanelItem:
-            text: "Default players"
+            text: "Defaults"
 
-            ActionBar:
-                pos_hint: {'top':1}
-
-                ActionView:
-                    use_separator: True
-
-                    ActionPrevious:
-                        title: "Default players"
-                        with_previous: False
-                        app_icon: "atlas://data/images/defaulttheme/transparent"
-
-                    ActionOverflow
-
-                    ActionButton:
-                        text: "Reset"
-                        on_release: root.reset_default_players()
-
-            ScrollView:
-                size_hint: None, None
-                do_scroll_x: False
-
-                Scatter:
-                    do_rotation: False
-                    do_scale: False
-                    do_translation: False
-                    size_hint_y: None
-                    height: def_players_box.height
-
-                    BoxLayout:
-                        id: def_players_box
-                        size_hint_y: None
-                        orientation: "vertical"
-
-        TabbedPanelItem:
-            text: "Default lyrics providers"
-
-            ActionBar:
-                pos_hint: {'top':1}
-
-                ActionView:
-                    use_separator: True
-
-                    ActionPrevious:
-                        title: "Default lyrics providers"
-                        with_previous: False
-                        app_icon: "atlas://data/images/defaulttheme/transparent"
-
-                    ActionOverflow
-
-                    ActionButton:
-                        text: "Reset"
-                        on_release: root.reset_default_lrc_providers()
-
-            ScrollView:
-                size_hint: None, None
-                do_scroll_x: False
-
-                Scatter:
-                    do_rotation: False
-                    do_scale: False
-                    do_translation: False
-                    size_hint_y: None
-                    height: def_lrc_box.height
-
-                    BoxLayout:
-                        id: def_lrc_box
-                        size_hint_y: None
-                        orientation: "vertical"
+            BoxLayout:
+                id: defaults_box
+                size_hint_y: None
+                orientation: "vertical"
 
 <PluginItem>:
     size_hint: .25, None
-    height: (labellayout.texture_size[1] if labellayout.texture_size[1] > 48 else 48) + dp(10)
+    height: (labellayout.texture_size[1] if labellayout.texture_size[1] > dp(48) else dp(48)) + dp(10)
     content: content
     title: self.manifest.title
     desc: self.manifest.short_description
@@ -212,19 +122,19 @@
             pos: self.x, self.y - 2
             size: self.width, 1
 
-    AsyncImage:
-        source: root.icon != "" and root.icon or "atlas://data/images/defaulttheme/image-missing"
-        size_hint: None, None
-        size: ("48dp", "48dp")
-
     BoxLayout:
         pos: root.pos
+
+        AsyncImage:
+            source: root.manifest.errs_loading and "atlas://data/images/defaulttheme/warning" or (root.logo != "" and root.logo or "atlas://data/images/defaulttheme/image-missing")
+            size_hint_x: None
+            size: ("48dp", "48dp")
 
         Label:
             size_hint_x: .66
             id: labellayout
             markup: True
-            text: u'{0}\n[size=13sp][color=999999]{1}[/color][/size]'.format(root.title or '', root.desc or '')
+            text: u'{0}\n[size=13sp][color=999999]{1}[/color][/size]'.format(root.title or '', not root.manifest.errs_loading and (root.desc or '') or root.manifest.errs_loading)
             font_size: '15sp'
             text_size: self.width - 32, None
 
@@ -240,6 +150,8 @@
 
 <PluginPopup>:
     infolabel: infolabel
+    screenshot: screenshot.__self__
+    switch: switch.__self__
 
     GridLayout:
         padding: 12
@@ -248,27 +160,42 @@
         pos: root.pos
         size: root.size
 
-        CloseButton:
-            popup: root
-            x: root.x - (self.width / 2)
-            y: root.y - (self.width / 2)
-
-        BoxLayout:
+        FloatLayout:
+            id: flo
             orientation: "horizontal"
+            size_hint_y: None
+            height: "48dp"
+
+            CloseButton:
+                popup: root
+                size_hint: None, None
+                x: root.x - (self.width / 2.5)
+                y: root.y + root.height - (self.height / 1.5)
+                size: self.texture_size
+
+            AsyncImage:
+                size_hint: None, None
+                size: "48dp", "48dp"
+                source: root.logo != "" and root.logo or "atlas://data/images/defaulttheme/image-missing"
+                x: flo.x
+                y: flo.y - dp(1) + self.height / 10
 
             Label:
-                text: root.manifest.title + " [i]" + root.manifest.version + "[/i]"
+                text: root.manifest.title + " [i](v" + root.manifest.version + ")[/i]"
                 markup: True
                 color: root.title_color
                 size_hint_y: None
                 height: self.texture_size[1] + 16
                 text_size: self.width - 16, None
                 font_size: root.title_size
-
-            Widget
+                x: flo.x + dp(48)
+                y: flo.y - dp(1) + self.height / 5
 
             Switch:
-                active: not root.plugin_disabled
+                id: switch
+                size_hint: None, None
+                x: flo.x + flo.width - self.width - dp(4)
+                y: flo.y - dp(2) - self.width / 5
 
         Widget:
             size_hint_y: None
@@ -283,17 +210,13 @@
         GridLayout:
             cols: 2
             padding: dp(10)
-
-            BoxLayout:
-                orientation: "vertical"
-                size_hint_x: None
-                width: dp(128)
+            spacing: dp(20)
 
             ScrollView:
-                size_hint: None, None
                 do_scroll_x: False
 
                 Scatter:
+                    id: scatt
                     do_rotation: False
                     do_scale: False
                     do_translation: False
@@ -302,14 +225,42 @@
 
                     BoxLayout:
                         id: infobox
-                        size_hint_y: None
+                        size_hint: None, None
                         orientation: "vertical"
+                        size: scatt.width, infolabel.height
 
                         Label:
                             id: infolabel
+                            size: self.texture_size
+                            text_size: infobox.width, None
                             markup: True
 
-            
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_x: None
+                width: dp(200)
+
+                IconButton:
+                    label: "Uninstall"
+                    icon: "atlas://data/images/defaulttheme/delete"
+                    size_hint_y: None
+                    height: "40dp"
+                    disabled: root.manifest.system or root.manifest.stock
+
+                IconButton:
+                    label: "Update"
+                    icon: "atlas://data/images/defaulttheme/update"
+                    size_hint_y: None
+                    height: "40dp"
+                    disabled: True
+
+                AsyncImage:
+                    id: screenshot
+                    source: "atlas://data/images/defaulttheme/transparent"
+                    size_hint: None, None
+                    width: "200dp"
+
+                Widget
 
 
 <FileChooserArtView>:
@@ -354,6 +305,38 @@
     	max: 1
     	value: max(0, min(1, scrollview.scroll_y))
 
+<RestartPopup>:
+    title: "Restart required"
+    size_hint: .7, .7
+
+    BoxLayout:
+        orientation: "vertical"
+            
+        Label:
+            text_size: self.size
+            text: root.label
+
+        Widget
+
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: "40dp"
+
+            Button:
+                text: "Do nothing"
+                on_release: root.do_nothing()
+
+            Button:
+                text: "Exit"
+                on_release: app.stop()
+
+            Button:
+                text: "Restart"
+                on_release: root.restart_app()
+
+
+
 [FileThumbEntry@Widget]:
     locked: False
     path: ctx.path
@@ -375,20 +358,20 @@
 
     Image:
         size: '64dp', '64dp'
-        source: ctx.controller().get_image(ctx)
+        source: ctx.controller()._get_image(ctx)
         pos: root.x + dp(24), root.y + dp(40)
     Label:
-        text: unicode(ctx.name, errors="replace")
-        text_size: (root.width, self.height)
+        text: ctx.controller()._unicode_noerrs(ctx.name)
+        text_size: (ctx.controller().thumbsize, self.height)
         halign: 'center'
         shorten: True
-        size: '116dp', '16dp'
-        pos: root.x, root.y + dp(16)
+        size: ctx.controller().thumbsize, '16dp'
+        pos: root.center_x - self.width / 2, root.y + dp(16)
 
     Label:
-        text: unicode(ctx.controller().gen_label(ctx), errors="replace")
+        text: ctx.controller()._unicode_noerrs(ctx.controller()._gen_label(ctx))
         font_size: '11sp'
         color: .8, .8, .8, 1
-        size: '116dp', '16sp'
-        pos: root.pos
+        size: ctx.controller().thumbsize, '16sp'
+        pos: root.center_x - self.width / 2, root.y
         halign: 'center'

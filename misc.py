@@ -89,3 +89,9 @@ def rgb2bash(rgb):
         color = "white"
     elif rgb == [0, 0, 0]:
         color = "black"
+
+def repr_list(seq):
+    toret = ""
+    for i in seq:
+        toret += i + ", "
+    return toret[:-2]

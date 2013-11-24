@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # ui.py
-# Copyright (C) 2013 Davide Depau <david.dep.1996@gmail.com>
+# Copyright (C) 2013 Davide Depau <me@davideddu.org>
 #
 # Karaokivy is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -21,19 +21,24 @@ mimetypes.add_type("image/jpeg", ".JPG")
 mimetypes.add_type("image/jpg", ".jpg")
 mimetypes.add_type("image/jpeg", ".jpg")
 from os.path import dirname, basename, join, exists, normpath, isdir
+from chardet import detect as chardetect
+from misc import repr_list
 from mutagen.id3 import ID3
 from mutagen.flac import FLAC
-from tempfile import mktemp
+from tempfile import mkdtemp, mktemp
 
 from pygame import font as fonts
 
 from kivy.adapters.listadapter import ListAdapter
+from kivy.animation import Animation
 from kivy.app import App
+from kivy.atlas import Atlas
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
+from kivy.metrics import dp
 from kivy.properties import NumericProperty, BoundedNumericProperty,\
-						    ObjectProperty, StringProperty, DictProperty,\
-						    ListProperty, OptionProperty, BooleanProperty
+                            ObjectProperty, StringProperty, DictProperty,\
+                            ListProperty, OptionProperty, BooleanProperty
 from kivy.resources import resource_find
 from kivy.utils import get_color_from_hex, platform as core_platform
 from kivy.uix.actionbar import ActionButton, ActionBar, ActionView, ActionOverflow, ActionGroup
@@ -53,6 +58,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.settings import SettingItem, SettingSpacer, SettingsPanel
 from kivy.uix.slider import Slider
 from kivy.uix.switch import Switch
+from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.textinput import TextInput
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
@@ -130,7 +136,6 @@ class ToolbarSection(BoxLayout):
         if index: args.append(index)
         super(ToolbarSection, self).add_widget(*args)
         if self.position in ("left", "right"):
-            print "Both"
             self.spacers = [Widget()]
         if self.position == "left":
             super(ToolbarSection, self).add_widget(self.spacers[0])
@@ -244,6 +249,28 @@ class SliderButton(ActionButton):
     def update_bubble_pos(self, *args):
         self.bubble.pos = (self.pos[0], self.pos[1] + 48)
 
+class AnimTabbedPanel(TabbedPanel):
+
+    #override tab switching method to animate on tab switch
+    def switch_to(self, header):
+        anim = Animation(opacity=0, d=.24, t='in_out_quad')
+
+        def start_anim(_anim, child, in_complete, *lt):
+            _anim.start(child)
+
+        def _on_complete(*lt):
+            if header.content:
+                header.content.opacity = 0
+                anim = Animation(opacity=1, d=.43, t='in_out_quad')
+                start_anim(anim, header.content, True)
+            super(AnimTabbedPanel, self).switch_to(header)
+
+        anim.bind(on_complete = _on_complete)
+        if self.current_tab.content:
+            start_anim(anim, self.current_tab.content, False)
+        else:
+            _on_complete()
+
 class DavColorPicker(ColorPicker):
     text = StringProperty("")
     def __init__(self, **kwargs):
@@ -270,7 +297,6 @@ class SettingColor(SettingItem):
         self.rect.text = self.value
         avg = (color[0] + color[1] + color[2]) / 3
         self.rect.color = [0, 0, 0, 1] if avg > 0.5 else [1, 1, 1, 1]
-        print avg
 
 
     def on_panel(self, instance, value):
@@ -514,13 +540,37 @@ class MultiActionButton(ActionButton):
     action = StringProperty("")
 
 class FileChooserArtView(FileChooserController):
-    '''Implementation of :class:`FileChooserController` using an icon view.
+    '''Implementation of :class:`FileChooserController` using an icon view with thumbnails.
     '''
     _ENTRY_TEMPLATE = 'FileThumbEntry'
-    thumbs = DictProperty({})
+
+    thumbdir = StringProperty(mkdtemp(prefix="kivy-", suffix="-thumbs"))
+    """Custom directory for the thumbnails. By default it uses tempfile to
+    generate it randomly.
+    """
+
+    showthumbs = NumericProperty(-1)
+    """Thumbnail limit. If set to a number > 0, it will show the thumbnails
+    only if the directory doesn't contain more files or directories. If set
+    to 0 it won't show any thumbnail. If set to a number < 0 it will always
+    show the thumbnails, regardless of how many items the current directory
+    contains.
+    By default it is set to -1, so it will show all the thumbnails.
+    """
+
+    thumbsize = NumericProperty(dp(64))
+    """The size of the thumbnails. It defaults to 64dp.
+    """
+
+    _thumbs = DictProperty({})
     scrollview = ObjectProperty(None)
 
-    def get_image(self, ctx):
+    def __init__(self, **kwargs):
+        super(FileChooserArtView, self).__init__(**kwargs)
+        if not exists(self.thumbdir):
+            os.mkdir(self.thumbdir)
+
+    def _get_image(self, ctx):
         to_return = None
         if ctx.isdir:
             to_return = 'atlas://data/images/defaulttheme/filechooser_folder'
@@ -533,8 +583,8 @@ class FileChooserArtView(FileChooserController):
                 if not mime:
                     mime = ""
 
-                if ctx.path in self.thumbs.keys():
-                    to_return = self.thumbs[ctx.path]
+                if ctx.path in self._thumbs.keys():
+                    to_return = self._thumbs[ctx.path]
                 elif mime == "audio/mpeg":
                     try:
                         audio = ID3(ctx.path)
@@ -551,11 +601,11 @@ class FileChooserArtView(FileChooserController):
                             # and the default one would be returned
                             pix = art[0]
                         ext = mimetypes.guess_extension(pix.mime)
-                        image = mktemp() + ext if ext != ".jpe" else ".jpg"
+                        image = join(self.thumbdir, mktemp()) + ext if ext != ".jpe" else ".jpg"
                         with open(image, "w") as img:
                             img.write(pix.data)
                         to_return = image
-                        self.thumbs[ctx.path] = image
+                        self._thumbs[ctx.path] = image
                     except:
                         traceback.print_exc()
                         to_return = 'atlas://data/images/mimetypes/audio_mpeg'
@@ -574,11 +624,11 @@ class FileChooserArtView(FileChooserController):
                             # This would raise an exception if no image is present,
                             # and the default one would be returned
                             pix = art[0]
-                        image = mktemp() + mimetypes.guess_extension(pix.mime)
+                        image = join(self.thumbdir, mktemp()) + mimetypes.guess_extension(pix.mime)
                         with open(image, "w") as img:
                             img.write(pix.data)
                         to_return = image
-                        self.thumbs[ctx.path] = image
+                        self._thumbs[ctx.path] = image
                     except:
                         traceback.print_exc()
                         to_return = 'atlas://data/images/mimetypes/audio_flac'
@@ -590,11 +640,11 @@ class FileChooserArtView(FileChooserController):
                     elif exec_exists("ffmpeg"):
                         data = subprocess.Popen(['ffmpeg', '-i', ctx.path, '-an', '-vcodec', 'png', '-vframes', '1', '-ss', '00:00:01', '-y', '-f', 'rawvideo', '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
                     if data:
-                        image = mktemp() + ".png"
+                        image = join(self.thumbdir, mktemp()) + ".png"
                         with open(image, "w") as img:
                             img.write(data)
                         to_return = image
-                        self.thumbs[ctx.path] = image
+                        self._thumbs[ctx.path] = image
                     else:
                         uri = 'atlas://data/images/mimetypes/{0}'.format(mime.replace("/", "_").replace("-", "_"))
                         if atlas_texture_exists(uri):
@@ -616,7 +666,7 @@ class FileChooserArtView(FileChooserController):
 
         return to_return
 
-    def gen_label(self, ctx):
+    def _gen_label(self, ctx):
         size = ctx.get_nice_size()
         t = ""
         try:
@@ -632,6 +682,19 @@ class FileChooserArtView(FileChooserController):
         else:
             label = size + " - " + t
         return label
+        
+    def _unicode_noerrs(self, string):
+        if not string:
+            return u""
+        if type(string) == type(unicode()):
+            return string
+        try:
+            return unicode(string, encoding=chardetect(string)["encoding"])
+        except:
+            raise UnicodeWarning("EXCEPTION IN FileChooserThumbView._unicode_noerrs skipped.\nThis means that file list might not contain all the files that are really present in the directory.\nThis was the exception:")
+            traceback.print_exc()
+            return u""
+
 
 class KKFileChooser(BoxLayout):
     filename = StringProperty("")
@@ -643,8 +706,8 @@ class KKFileChooser(BoxLayout):
         super(KKFileChooser, self).__init__(**kwargs)
         self.orientation = "vertical"
         self.spacing = "5dp"
-        self.chooser = FileChooserArtView(path=self.path, thumbs=self.thumbs)
-        self.chooser.bind(selection=self.on_file_select, path=self.setter("path"), thumbs=self.setter("thumbs"))
+        self.chooser = FileChooserArtView(path=self.path, _thumbs=self.thumbs)
+        self.chooser.bind(selection=self.on_file_select, path=self.setter("path"), _thumbs=self.setter("thumbs"))
         self.fileentry = TextInput(size_hint_y=None, height="30dp", text=self.filename, multiline=False)
         self.fileentry.bind(text=self.setter("filename"))
 
@@ -802,15 +865,10 @@ def atlas_texture_exists(uri):
         
         traceback.print_exc()
 
-class PluginsPanel(SettingsPanel):
+class PluginsPanel(BoxLayout):
     title = StringProperty("Plug-ins")
     plugins_box = ObjectProperty(None)
-    def_players_box = ObjectProperty(None)
-    def_lrc_box = ObjectProperty(None)
-
-    def __init__(self, **kwargs):
-        kwargs.setdefault('cols', 1)
-        super(PluginsPanel, self).__init__(**kwargs)
+    defaults_box = ObjectProperty(None)
 
     def install_plugin(self, *args):
         NotImplemented
@@ -821,11 +879,11 @@ class PluginsPanel(SettingsPanel):
 class PluginItem(FloatLayout):
     title = StringProperty('<No title set>')
     desc = StringProperty("")
-    icon = StringProperty("")
     disabled = BooleanProperty(False)
     stock = BooleanProperty(False)
     manifest = ObjectProperty(None)
     selected_alpha = NumericProperty(0)
+    logo = StringProperty("")
 
     __events__ = ('on_release',)
 
@@ -833,6 +891,9 @@ class PluginItem(FloatLayout):
         super(PluginItem, self).__init__(**kwargs)
         self.bind(disabled=self.toggle)
         self.titlebak = self.title[:]
+        p = join(self.manifest.path, "logo/32.png")
+        if exists(p):
+            self.logo = p
 
     def add_widget(self, *largs):
         if self.content is None:
@@ -864,29 +925,32 @@ class PluginItem(FloatLayout):
 
     def on_release(self, *args):
         # create popup layout
-        self.popup = PluginPopup(manifest=self.manifest, disabled=self.disabled)
+        self.popup = PluginPopup(manifest=self.manifest, disabled=self.disabled, logo=self.logo)
         self.popup.bind(disabled=self.setter("disabled"))
         self.bind(disabled=self.popup.setter("disabled"))
 
         # all done, open the popup !
-        popup.open()
+        self.popup.open()
 
 class PluginPopup(ModalView):
-    title_size = NumericProperty('14sp')
+    title_size = NumericProperty('20sp')
     title_color = ListProperty([1, 1, 1, 1])
     separator_color = ListProperty([47 / 255., 167 / 255., 212 / 255., 1.])
     separator_height = NumericProperty('2dp')
     manifest = ObjectProperty(None)
     plugin_disabled = BooleanProperty(False)
     infolabel = ObjectProperty(None)
+    logo = StringProperty("")
+    screenshot = ObjectProperty(None)
+    switch = ObjectProperty(None)
 
     def __init__(self, **kwargs):
+        kwargs.setdefault('size_hint', (.9, .9))
         super(PluginPopup, self).__init__(**kwargs)
-        def repr_list(seq):
-            toret = ""
-            for i in seq:
-                toret += i + ", "
-            return toret[:-2]
+
+        self.switch.active = self.manifest.active
+        self.switch.bind(active=self.manifest.setter("active"))
+        self.switch.disabled = bool(self.manifest.errs_loading)
 
         def repr_purposes(seq):
             toret = ""
@@ -908,24 +972,27 @@ class PluginPopup(ModalView):
             if "lyrics_provider" in manifest.purposes:
                 toret += "[b]Supported audio MIME types for lyrics:[/b] {0}\n".format(repr_list(manifest.lyrics_provider.supported_audio_mimes))
                 toret += "[b]Supported lyrics format:[/b] {0}\n".format(repr_list(manifest.lyrics_provider.supported_lrc_types))
-            return toret
+            return toret + "\n"
 
 
         def repr_authors(seq):
             toret = ""
             for i in seq:
                 if "homepage" in i.keys() and "email" in i.keys():
-                    toret += "[b]" + i["name"] + "[/b] ([ref=email{0}]e-mail[/ref], [ref=homepage{0}]homepage[/ref])\n".format(seq.index(i))
+                    toret += "    - [b]" + i["name"] + "[/b] ([ref=email{0}]e-mail[/ref], [ref=homepage{0}]homepage[/ref])\n".format(seq.index(i))
                 elif "homepage" in i.keys():
-                    toret += "[b]" + i["name"] + "[/b] ([ref=homepage{0}]homepage[/ref])\n".format(seq.index(i))
+                    toret += "    - [b]" + i["name"] + "[/b] ([ref=homepage{0}]homepage[/ref])\n".format(seq.index(i))
                 elif "email" in i.keys():
-                    toret += "[b]" + i["name"] + "[/b] ([ref=email{0}]e-mail[/ref])\n".format(seq.index(i))
+                    toret += "    - [b]" + i["name"] + "[/b] ([ref=email{0}]e-mail[/ref])\n".format(seq.index(i))
                 else:
-                    toret +=  "[b]" + i["name"] + "[/b]\n"
+                    toret += "    - [b]" + i["name"] + "[/b]\n"
 
             return toret[:-1]
 
         self.infolabel.text = """{manifest.long_description}
+{error}
+
+[ref=homepage]Homepage[/ref]
 
 [b]Name:[/b] {manifest.name}
 [b]Version:[/b] {manifest.version}
@@ -933,15 +1000,22 @@ class PluginPopup(ModalView):
 [b]Required Python modules:[/b] {depends_py}
 [b]Purpose{0}:[/b] {purposes}
 {optional}
+[b]Authors:[/b]
 {authors}
 
-[ref=homepage][b]Homepage[/b][/ref]""".format(
+[b]License:[/b] [ref=license]{license_name}[/ref] ({license_type}){license_text}
+""".format(
             "s" if len(self.manifest.purposes) > 1 else "",
-            manifest=self.manifest, depends_kk=repr_list(self.manifest.depends_kk),
-            depends_py=repr_list(self.manifest.depends_py),
-            purposes=repr_list(self.manifest.purposes),
+            manifest=self.manifest,
+            depends_kk=repr_list(self.manifest.depends_kk == [] and ["None"] or self.manifest.depends_kk),
+            depends_py=repr_list(self.manifest.depends_py == [] and ["None"] or self.manifest.depends_py),
+            purposes=repr_purposes(self.manifest.purposes),
             authors=repr_authors(self.manifest.authors),
-            optional=repr_optional(self.manifest)
+            optional=repr_optional(self.manifest),
+            error=self.manifest.errs_loading or "",
+            license_name=self.manifest.license["name"],
+            license_type=self.manifest.license["type"],
+            license_text="" if not self.manifest.license["text"] else "\n\n" + self.manifest.license["text"]
             )
 
         self.infolabel.bind(on_ref_press=self.on_ref)
@@ -955,8 +1029,47 @@ class PluginPopup(ModalView):
         elif "homepage" in value:
             index = int(value.replace("homepage", ""))
             open_url(self.manifest.authors[index]["homepage"])
+        elif "license" in value:
+            try:
+                open_url(self.manifest.license["url"])
+            except:
+                pass
 
     def on_touch_down(self, touch):
         if self.disabled and self.collide_point(*touch.pos):
             return True
-        return super(Popup, self).on_touch_down(touch)
+        return super(PluginPopup, self).on_touch_down(touch)
+
+
+class RestartPopup(Popup):
+    """Popup that asks the user if he wants to restart the app
+    after making thanges that require restart. Users might also
+    just exit.
+    """
+
+    def __init__(self, **kwargs):
+        self.label = """Karaokivy needs restart to apply some of the settings you changed.
+If you don't, some plug-ins may not be enabled/disabled, or something might not work as expected."""
+
+        if platform in ("android", "ios"):
+            self.label += """\n\nNote: it seems that you're using Android/iOS; restarting will probably not work. If it just exits, restart the app manually. Thank you."""
+
+        super(RestartPopup, self).__init__(**kwargs)
+
+    def do_nothing(self, *args):
+        """Closes the popup and the settings UI without restarting.
+        """
+        self.dismiss()
+        App.get_running_app().close_settings()
+
+    def restart_app(self, *args):
+        """Restarts the current program or exits if it's not possible.
+        Note: this function does not return. Any cleanup action (like
+        saving data) must be done before calling this function.
+        """
+
+        try:
+            python = sys.executable
+            os.execl(python, python, * sys.argv)
+        except:
+            sys.exit("Failed to restart, exiting normally.")

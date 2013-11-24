@@ -1,0 +1,12 @@
+{
+	"name":						"org.davideddu.karaokivy.defaulttheme",
+	"title":					"Default",
+	"version":					"0.2",
+	"license":					"GPL-3.0",
+	"short_description":		"Default theme for Karaokivy",
+	"long_description":			"This is the default theme for Karaokivy. It's based on Kivy's default theme.",
+	"homepage":					"http://davideddu.tuxfamily.org/wiki/Karaokivy",
+	"authors":					[{"name": "Davide Depau", "email": "david.dep.1996@gmail.com", "homepage": "http://davideddu.tuxfamily.org"}],
+	"platforms":				["all"],
+	"purposes":					["theme"]
+} 

@@ -1,0 +1,9 @@
+[submodule "patched-mutagen"]
+	path = patched-mutagen
+	url = https://github.com/Davideddu/patched-mutagen
+[submodule "patched_mutagen"]
+	path = patched_mutagen
+	url = https://github.com/Davideddu/patched_mutagen.git
+[submodule "mutagen"]
+	path = mutagen
+	url = git@github.com:Davideddu/mutagen.git
