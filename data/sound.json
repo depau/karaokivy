@@ -1,0 +1,7 @@
+[
+    { "type":    "soundfont",
+      "title":   "SoundFont",
+      "desc":    "The default SoundFont used to play MIDI files (only supported plug-ins)",
+      "section": "Karaokivy",
+      "key":     "soundfont"}
+]

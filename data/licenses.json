@@ -1,0 +1,416 @@
+{
+  "Multics": {
+    "url": "http://opensource.org/licenses/Multics",
+    "type": "Open-source",
+    "text": false,
+    "name": "Multics License"
+  },
+  "MirOS": {
+    "url": "http://opensource.org/licenses/MirOS",
+    "type": "Open-source",
+    "text": false,
+    "name": "MirOS Licence"
+  },
+  "LPL-1.02": {
+    "url": "http://opensource.org/licenses/LPL-1.02",
+    "type": "Open-source",
+    "text": false,
+    "name": "Lucent Public License Version 1.02"
+  },
+  "CNRI-Python": {
+    "url": "http://opensource.org/licenses/CNRI-Python",
+    "type": "Open-source",
+    "text": false,
+    "name": "CNRI Python license"
+  },
+  "SPL-1.0": {
+    "url": "http://opensource.org/licenses/SPL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Sun Public License 1.0"
+  },
+  "AAL": {
+    "url": "http://opensource.org/licenses/AAL",
+    "type": "Open-source",
+    "text": false,
+    "name": "Attribution Assurance Licenses"
+  },
+  "LPPL-1.3c": {
+    "url": "http://opensource.org/licenses/LPPL-1.3c",
+    "type": "Open-source",
+    "text": false,
+    "name": "LaTeX Project Public License 1.3c"
+  },
+  "BSL-1.0": {
+    "url": "http://opensource.org/licenses/BSL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Boost Software License"
+  },
+  "HPND": {
+    "url": "http://opensource.org/licenses/HPND",
+    "type": "Open-source",
+    "text": false,
+    "name": "Historical Permission Notice and Disclaimer"
+  },
+  "QPL-1.0": {
+    "url": "http://opensource.org/licenses/QPL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Q Public License"
+  },
+  "Artistic-2.0": {
+    "url": "http://opensource.org/licenses/Artistic-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Artistic license 2.0"
+  },
+  "GPL-3.0": {
+    "url": "http://opensource.org/licenses/GPL-3.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "GNU General Public License version 3.0"
+  },
+  "AGPL-3.0": {
+    "url": "http://opensource.org/licenses/AGPL-3.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "GNU Affero General Public License v3"
+  },
+  "CDDL-1.0": {
+    "url": "http://opensource.org/licenses/CDDL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Common Development and Distribution License 1.0"
+  },
+  "ISC": {
+    "url": "http://opensource.org/licenses/ISC",
+    "type": "Open-source",
+    "text": false,
+    "name": "ISC License"
+  },
+  "EUPL-1.1": {
+    "url": "http://joinup.ec.europa.eu/software/page/eupl",
+    "type": "Open-source",
+    "text": false,
+    "name": "European Union Public License, Version 1.1"
+  },
+  "Apache-2.0": {
+    "url": "http://opensource.org/licenses/Apache-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Apache License 2.0"
+  },
+  "MIT": {
+    "url": "http://opensource.org/licenses/MIT",
+    "type": "Open-source",
+    "text": false,
+    "name": "MIT license"
+  },
+  "W3C": {
+    "url": "http://opensource.org/licenses/W3C",
+    "type": "Open-source",
+    "text": false,
+    "name": "W3C License"
+  },
+  "RPL-1.5": {
+    "url": "http://opensource.org/licenses/RPL-1.5",
+    "type": "Open-source",
+    "text": false,
+    "name": "Reciprocal Public License 1.5"
+  },
+  "NGPL": {
+    "url": "http://opensource.org/licenses/NGPL",
+    "type": "Open-source",
+    "text": false,
+    "name": "Nethack General Public License"
+  },
+  "APL-1.0": {
+    "url": "http://opensource.org/licenses/APL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Adaptive Public License"
+  },
+  "EFL-2.0": {
+    "url": "http://opensource.org/licenses/EFL-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Eiffel Forum License V2.0"
+  },
+  "GPL-2.0": {
+    "url": "http://opensource.org/licenses/GPL-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "GNU General Public License version 2.0"
+  },
+  "ECL-2.0": {
+    "url": "http://opensource.org/licenses/ECL-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Educational Community License, Version 2.0"
+  },
+  "AFL-3.0": {
+    "url": "http://opensource.org/licenses/AFL-3.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Academic Free License 3.0"
+  },
+  "RPSL-1.0": {
+    "url": "http://opensource.org/licenses/RPSL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "RealNetworks Public Source License V1.0"
+  },
+  "VSL-1.0": {
+    "url": "http://opensource.org/licenses/VSL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Vovida Software License v. 1.0"
+  },
+  "OSL-3.0": {
+    "url": "http://opensource.org/licenses/OSL-3.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Open Software License 3.0"
+  },
+  "SimPL-2.0": {
+    "url": "http://opensource.org/licenses/SimPL-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Simple Public License 2.0"
+  },
+  "Watcom-1.0": {
+    "url": "http://opensource.org/licenses/Watcom-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Sybase Open Watcom Public License 1.0"
+  },
+  "Entessa": {
+    "url": "http://opensource.org/licenses/Entessa",
+    "type": "Open-source",
+    "text": false,
+    "name": "Entessa Public License"
+  },
+  "LGPL-2.1": {
+    "url": "http://opensource.org/licenses/LGPL-2.1",
+    "type": "Open-source",
+    "text": false,
+    "name": "GNU Library or \"Lesser\" General Public License version 2.1"
+  },
+  "EPL-1.0": {
+    "url": "http://opensource.org/licenses/EPL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Eclipse Public License 1.0"
+  },
+  "Sleepycat": {
+    "url": "http://opensource.org/licenses/Sleepycat",
+    "type": "Open-source",
+    "text": false,
+    "name": "Sleepycat License"
+  },
+  "BSD-2-Clause": {
+    "url": "http://opensource.org/licenses/BSD-2-Clause",
+    "type": "Open-source",
+    "text": false,
+    "name": "BSD 2-Clause \"Simplified\" or \"FreeBSD\" License"
+  },
+  "Xnet": {
+    "url": "http://opensource.org/licenses/Xnet",
+    "type": "Open-source",
+    "text": false,
+    "name": "X.Net License"
+  },
+  "MS-PL": {
+    "url": "http://opensource.org/licenses/MS-PL",
+    "type": "Open-source",
+    "text": false,
+    "name": "Microsoft Public License"
+  },
+  "Nokia": {
+    "url": "http://opensource.org/licenses/Nokia",
+    "type": "Open-source",
+    "text": false,
+    "name": "Nokia Open Source License"
+  },
+  "CUA-OPL-1.0": {
+    "url": "http://opensource.org/licenses/CUA-OPL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "CUA Office Public License Version 1.0"
+  },
+  "Zlib": {
+    "url": "http://opensource.org/licenses/Zlib",
+    "type": "Open-source",
+    "text": false,
+    "name": "zlib/libpng license"
+  },
+  "NASA-1.3": {
+    "url": "http://opensource.org/licenses/NASA-1.3",
+    "type": "Open-source",
+    "text": false,
+    "name": "NASA Open Source Agreement 1.3"
+  },
+  "MS-RL": {
+    "url": "http://opensource.org/licenses/MS-RL",
+    "type": "Open-source",
+    "text": false,
+    "name": "Microsoft Reciprocal License"
+  },
+  "NPOSL-3.0": {
+    "url": "http://opensource.org/licenses/NPOSL-3.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Non-Profit Open Software License 3.0"
+  },
+  "CECILL-2.1": {
+    "url": "http://opensource.org/licenses/CECILL-2.1",
+    "type": "Open-source",
+    "text": false,
+    "name": "CeCILL License 2.1"
+  },
+  "APSL-2.0": {
+    "url": "http://opensource.org/licenses/APSL-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Apple Public Source License"
+  },
+  "OGTSL": {
+    "url": "http://opensource.org/licenses/OGTSL",
+    "type": "Open-source",
+    "text": false,
+    "name": "Open Group Test Suite License"
+  },
+  "MPL-2.0": {
+    "url": "http://opensource.org/licenses/MPL-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Mozilla Public License 2.0"
+  },
+  "ZPL-2.0": {
+    "url": "http://opensource.org/licenses/ZPL-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Zope Public License 2.0"
+  },
+  "EUDatagrid": {
+    "url": "http://opensource.org/licenses/EUDatagrid",
+    "type": "Open-source",
+    "text": false,
+    "name": "EU DataGrid Software License"
+  },
+  "OCLC-2.0": {
+    "url": "http://opensource.org/licenses/OCLC-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "OCLC Research Public License 2.0"
+  },
+  "OFL-1.1": {
+    "url": "http://opensource.org/licenses/OFL-1.1",
+    "type": "Open-source",
+    "text": false,
+    "name": "Open Font License 1.1"
+  },
+  "Python-2.0": {
+    "url": "http://opensource.org/licenses/Python-2.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Python License"
+  },
+  "IPA": {
+    "url": "http://opensource.org/licenses/IPA",
+    "type": "Open-source",
+    "text": false,
+    "name": "IPA Font License"
+  },
+  "PostgreSQL": {
+    "url": "http://opensource.org/licenses/PostgreSQL",
+    "type": "Open-source",
+    "text": false,
+    "name": "The PostgreSQL License"
+  },
+  "LGPL-3.0": {
+    "url": "http://opensource.org/licenses/LGPL-3.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "GNU Library or \"Lesser\" General Public License version 3.0"
+  },
+  "Fair": {
+    "url": "http://opensource.org/licenses/Fair",
+    "type": "Open-source",
+    "text": false,
+    "name": "Fair License"
+  },
+  "CATOSL-1.1": {
+    "url": "http://opensource.org/licenses/CATOSL-1.1",
+    "type": "Open-source",
+    "text": false,
+    "name": "Computer Associates Trusted Open Source License 1.1"
+  },
+  "Naumen": {
+    "url": "http://opensource.org/licenses/Naumen",
+    "type": "Open-source",
+    "text": false,
+    "name": "Naumen Public License"
+  },
+  "CPAL-1.0": {
+    "url": "http://opensource.org/licenses/CPAL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Common Public Attribution License 1.0"
+  },
+  "Frameworx-1.0": {
+    "url": "http://opensource.org/licenses/Frameworx-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "Frameworx License"
+  },
+  "WXwindows": {
+    "url": "http://opensource.org/licenses/WXwindows",
+    "type": "Open-source",
+    "text": false,
+    "name": "wxWindows Library License"
+  },
+  "RSCPL": {
+    "url": "http: //opensource.org/licenses/RSCPL",
+    "type": "Open-source",
+    "text": false,
+    "name": "RicohSourceCodePublicLicense"
+  },
+  "NTP": {
+    "url": "http: //opensource.org/licenses/NTP",
+    "type": "Open-source",
+    "text": false,
+    "name": "NTPLicense"
+  },
+  "PHP-3.0": {
+    "url": "http: //opensource.org/licenses/PHP-3.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "PHPLicense3.0"
+  },
+  "Motosoto": {
+    "url": "http: //opensource.org/licenses/Motosoto",
+    "type": "Open-source",
+    "text": false,
+    "name": "MotosotoLicense"
+  },
+  "BSD-3-Clause": {
+    "url": "http: //opensource.org/licenses/BSD-3-Clause",
+    "type": "Open-source",
+    "text": false,
+    "name": "BSD3-Clause \"New\" or \"Revised\" License"
+  },
+  "NCSA": {
+    "url": "http: //opensource.org/licenses/NCSA",
+    "type": "Open-source",
+    "text": false,
+    "name": "UniversityofIllinois/NCSAOpenSourceLicense"
+  },
+  "IPL-1.0": {
+    "url": "http: //opensource.org/licenses/IPL-1.0",
+    "type": "Open-source",
+    "text": false,
+    "name": "IBMPublicLicense1.0"
+  }
+}
