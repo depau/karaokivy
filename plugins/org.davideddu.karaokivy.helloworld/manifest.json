@@ -1,0 +1,13 @@
+{
+	"name":						"org.davideddu.karaokivy.helloworld",
+	"title":					"Demo plugin for Karaokivy",
+	"version":					"0.1",
+	"license":					"GPL-3.0",
+	"short_description":		"A simple \"Hello World\" plugin for Karaokivy",
+	"long_description":			"A simple \"Hello World\" plugin for Karaokivy",
+	"homepage":					"http://davideddu.org/wiki/Karaokivy",
+	"authors":					[{"name": "Davide Depau", "email": "me@davideddu.org", "homepage": "http://davideddu.org"}],
+	"platforms":				["all"],
+	"purposes":					["feature"],
+	"feature.scopes":			["main_window", "lyrics_window", "remote_control_window"]
+} 

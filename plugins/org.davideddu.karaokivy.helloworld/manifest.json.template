@@ -1,0 +1,22 @@
+{
+	"name":						"org.davideddu.karaokivy.demo",
+	"title":					"Human readable plug-in name",
+	"version":					"0.0.1-1+ignored~ignored",
+	"short_description":		"Short description",
+	"long_description":			"Longer description",
+	"license":					"license_short_name" or {"name":"License human readable name", "url":"License's homepage", "type":"Open-source/Proprietary", "text":"Optional, text of the license (must use if url is not provided)},
+	"homepage":					"http://plug-in.website.org",
+	"authors":					[{"name": "Author Name or Nickname", "email": "best.plugin.maker@karaokivy.org", "homepage": "http://best.plugin.maker.org"}],
+	"platforms":				["all", "linux", "win", "android", "macosx",],
+	"requires":					[">=", "0.1~kk-version"],
+	"depends_py":				["os", "some_python_module"],
+	"depends_kk":				["com.pluginmaker.other.plugin", "other.karaokivy.plugin"],
+	"purposes":					["player", "lyrics_provider", "ui_expansion", "feature", "theme"],
+	"player.supported_mimes":	["audio/mpeg", "audio/x-wav", "audio/ogg"],
+	"player.supported_actions": ["pause", "get_position", "get_duration", "seek"],
+	"player.media_type":		"audio" or "video",
+	"lyrics_provider.supported_lrc_types":   ["lrc", "txt"],
+	"lyrics_provider.lyrics_type": "text / video",
+	"ui_expansion.scopes":		["main_window", "lyrics_window", "remote_control_window"],
+	"feature.scopes":			["main_window", "lyrics_window", "remote_control_window"]
+} 

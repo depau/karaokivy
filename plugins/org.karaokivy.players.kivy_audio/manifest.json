@@ -1,0 +1,17 @@
+{
+	"name":						"org.karaokivy.players.kivy_audio",
+	"title":					"Kivy Audio Player",
+	"version":					"0.1-alpha",
+	"short_description":		"Plays audio files using Kivy's built-in audio player.",
+	"long_description":			"Plays audio files using Kivy's built-in audio player.\nThe list of supported formats may vary from one platform to another. You might want to install some codecs on your system to make it support more files.\n\nThis plugin is part of Karaokivy's default plugin collection.",
+	"license":					"GPL-3.0",
+	"homepage":					"http://davideddu.org/wiki/Karaokivy",
+	"authors":					[{"name": "Davide Depau", "email": "me@davideddu.org", "homepage": "http://davideddu.org"}],
+	"platforms":				["all"],
+	"requires":					[">=", "0.2"],
+	"depends_py":				["kivy"],
+	"purposes":					["player"],
+	"player.supported_mimes":	["audio/*"],
+	"player.supported_actions": ["pause", "get_position", "get_duration", "seek"],
+	"player.media_type":		"audio"
+} 
