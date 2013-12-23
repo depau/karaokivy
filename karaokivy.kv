@@ -109,6 +109,7 @@
     title: self.manifest.title
     desc: self.manifest.short_description
     stock: self.manifest.stock
+    _box: contentbox
 
     canvas:
         Color:
@@ -124,6 +125,7 @@
 
     BoxLayout:
         pos: root.pos
+        id: contentbox
 
         AsyncImage:
             source: root.manifest.errs_loading and "atlas://data/images/defaulttheme/warning" or (root.logo != "" and root.logo or "atlas://data/images/defaulttheme/image-missing")
@@ -375,3 +377,24 @@
         size: ctx.controller().thumbsize, '16sp'
         pos: root.center_x - self.width / 2, root.y
         halign: 'center'
+
+<PluginSelector>:
+    content: content
+
+    BoxLayout:
+        orientation: "vertical"
+        spacing: "5px"
+
+        PluginsPanel:
+            id: content
+            title: root.title
+
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: "5px"
+
+            Button:
+                text: "Always"
+
+            Button:
+                text: "Just once"

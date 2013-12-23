@@ -34,7 +34,6 @@
 	karlabel: karlabel
 	image: image
 	tb: toolbar
-	pbbutton: playpause
 	volume: volume
 	speed: speed
 	pitch: pitch
@@ -85,6 +84,7 @@
     	left: left
     	center: center
     	right: right
+		playpause: playpause
 
 	    canvas:
 	        Color:
@@ -102,8 +102,9 @@
 
 			MultiActionButton:
 				id: playpause
-				icon: "atlas://data/images/defaulttheme/media-playback-start"
+				icon: "atlas://data/images/defaulttheme/media-playback-start" if self.action == "play" else "atlas://data/images/defaulttheme/media-playback-pause"
 				action: "play"
+				on_release: app.set_playback_state()
 
 			Widget
 

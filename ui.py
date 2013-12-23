@@ -45,6 +45,7 @@ from kivy.uix.actionbar import ActionButton, ActionBar, ActionView, ActionOverfl
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.bubble import Bubble, BubbleButton
 from kivy.uix.button import Button
+from kivy.uix.checkbox import CheckBox
 from kivy.uix.colorpicker import ColorPicker
 from kivy.uix.filechooser import FileChooserController, FileChooserIconView, FileChooserListView
 from kivy.uix.floatlayout import FloatLayout
@@ -114,6 +115,7 @@ class Root(BoxLayout):
     karlabel = ObjectProperty(None)
     image = ObjectProperty(None)
     tb = ObjectProperty(None)
+    playpause = ObjectProperty(None)
     volume = ObjectProperty(None)
     speed = ObjectProperty(None)
     pitch = ObjectProperty(None)
@@ -884,6 +886,7 @@ class PluginItem(FloatLayout):
     manifest = ObjectProperty(None)
     selected_alpha = NumericProperty(0)
     logo = StringProperty("")
+    _box = ObjectProperty(None)
 
     __events__ = ('on_release',)
 
@@ -1073,3 +1076,31 @@ If you don't, some plug-ins may not be enabled/disabled, or something might not 
             os.execl(python, python, * sys.argv)
         except:
             sys.exit("Failed to restart, exiting normally.")
+
+class PluginSelector(ModalView):
+    title = StringProperty("")
+    content = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        super(PluginSelector, self).__init__(**kwargs)
+        panel = PluginsPanel(self.title)
+        self.bind(title=panel.setter("title"))
+        box = BoxLayout(orientation="horizontal")
+        self.add_widget(box)
+        self.content = panel
+        once = Button(size_hint)
+
+
+    def add_widget(self, *largs):
+        if len(self.children) == 0:
+            return super(PluginSelector, self).add_widget(*largs)
+        return self.content.add_widget(*largs)
+
+class PluginToggleItem(PluginItem):
+    group = ObjectProperty(None)
+    radio = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        super(PluginToggleItem, self).__init__(**kwargs)
+        self.radio = CheckBox(group=self.group)
+        self._box.add_widget(self.radio)

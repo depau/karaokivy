@@ -32,7 +32,7 @@ SUPPORTED_FILES = ["*.mid", "*.midi", "*.MID", "*.MIDI", "*.kar", "*.KAR", "*.mp
 
 LABEL_TEXT = """Karaokivy"""
 
-import os, sys, argparse, misc, shutil, subprocess
+import sys
 
 # Prevent Kivy from detecting our arguments
 argv = sys.argv[1:]
@@ -44,10 +44,13 @@ if "--" in argv:
 
     sys.argv.extend(kivy_args)
 
-from os.path import join, exists
 
+import os, sys, argparse, misc, shutil, subprocess, time
+from os.path import join, exists
 from ui import *
 from plugin_utils import PluginManager
+from plugin_base import PluginError, PlayerError, PlayerOSError,\
+                        LyricsHandlerError, LyricsHandlerOSError
 
 import kivy
 
@@ -196,6 +199,9 @@ class Karaokivy(App):
     karlabel is a kivy.properties.ObjectProperty object
     """
 
+    player = ObjectProperty(None, allownone=True)
+    lyricsprovider = ObjectProperty(None, allownone=True)
+
     _needsrestart = BooleanProperty(False)
 
     fmthumbs = DictProperty({})
@@ -332,6 +338,7 @@ class Karaokivy(App):
             RestartPopup().open()
         self.close_settings()
 
+
     def on_load_plugin_settings(self, settings):
         """Dispatched after setting up the settings UI. Plugins that need a
         settings panel should use this event.
@@ -362,7 +369,7 @@ class Karaokivy(App):
         #self.root.add_widget(self.karlabel)
         self.karlabel.text = "Karaokivy"
         #self.karlabel.font_name = font_manager.findfont("OpenComicFont", fallback_to_default=True)
-        self.tb_playpause.icon = "atlas://data/images/defaulttheme/media-playback-start"
+        self.tb.playpause.icon = "atlas://data/images/defaulttheme/media-playback-start"
 
     def on_file_opened(self, file):
         """Dispatched after opening a file.
@@ -386,22 +393,62 @@ class Karaokivy(App):
         content.add_widget(btnlayout)
         self.open_popup.open()
 
-    def open_file(self, instance=None, value=None, file=None):
-        """Load a new song. Use the "file" keyword argument,
-        otherwise it will crash.
+    def open_file(self, *args, **kwargs):
+        """Load a new song. Use the "filename" keyword argument,
+        otherwise it will look for an open file chooser dialog and crash.
         """
+        filename = kwargs["filename"] if "filename" in kwargs else None
         # Tell the plug-ins to stop the song, then tell them not to bother.
         if self.state in ("play", "pause"):
             self.state = "stop"
         self.state = "busy"
-        if file == None:
-            file = self.chooser.selection[0]
+        if filename == None:
+            filename = self.chooser.chooser.selection[0]
             try:
                 self.open_popup.dismiss()
             except:
                 pass
-        self.file = file
+
+        if self.player:
+            self.player.unload()
+            
+        self.player = self.choose_player(filename)(file=filename, _app=self)
+
+        #if self.lyricsprovider:
+        #    self.lyricsprovider.unload()
+        #    del self.lyricsprovider
+
+        #self.lyricsprovider = self.choose_lyr_provider(self.player.get_lyrics_filename())
+
+        self.file = filename
         self.dispatch("on_file_opened", self.file)
+
+    def choose_player(self, obj):
+        players = self.pm.choose_player(obj)
+        if len(players) > 1:
+            NotImplemented
+            ## FIXME
+            return players[0]["player"]
+        else:
+            return players[0]["player"]
+
+    def choose_lyr_provider(self, obj):
+        lyr_providers = self.pm.choose_lyr_provider(obj)
+        if len(lyr_providers) > 1:
+            NotImplemented
+            return lyr_providers[lyr_providers.keys()[0]]
+        else:
+            return lyr_providers[lyr_providers.keys()[0]]
+
+    def set_playback_state(self, *args):
+        self.state = self.tb.playpause.action
+        if self.state == "play":
+            self.tb.playpause.action = "pause"
+        else:
+            self.tb.playpause.action = "play"
+
+    def open_file_error(self, exception):
+        NotImplemented
 
     def get_theme_path(self, theme):
         """Search the default theme paths for "theme" and return it.

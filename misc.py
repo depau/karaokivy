@@ -95,3 +95,24 @@ def repr_list(seq):
     for i in seq:
         toret += i + ", "
     return toret[:-2]
+
+class DontBotherShelf(shelve.DbfilenameShelf):
+    """Tweaked version of Shelf that doesn't raise an exception
+    when trying to get a non-existent key, and that has a
+    "set_default" method.
+    """
+
+    def __getitem__(*args, **kwargs):
+        try:
+            return shelve.DbfilenameShelf.__getitem__(*args, **kwargs)
+        except KeyError:
+            return None
+
+    def set_default(self, key, value):
+        """Checks if "key" already exists and, if it doesn't, it
+        creates it and sets it to "value".
+        """
+        try:
+            self[key]
+        except KeyError:
+            self[key] = value

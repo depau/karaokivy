@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.    If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys, imp, json, re, misc, traceback
+import os, sys, imp, json, re, mimetypes, misc, traceback
 from os.path import dirname, basename, join, exists, normpath, isdir, splitext
 from ConfigParser import NoOptionError
 from kivy.app import App
@@ -37,8 +37,8 @@ class PluginManager(EventDispatcher):
     app_domain = StringProperty("")
     curdir = StringProperty(os.path.dirname(os.path.realpath(__file__)))
     reset_plugins = BooleanProperty(False)
-    players = ListProperty([])
-    lyr_providers = ListProperty([])
+    players = DictProperty([])
+    lyr_providers = DictProperty([])
 
     def __init__(self, **kwargs):
         super(PluginManager, self).__init__(**kwargs)
@@ -46,8 +46,12 @@ class PluginManager(EventDispatcher):
             self.licenses = json.load(j)
         self.cfg = ConfigParser()
         self.cfg.adddefaultsection("Plugins")
-        self.cfg.adddefaultsection("PlayerPriority")
-        self.cfg.adddefaultsection("LyrProvidersPriority")
+        self.priorities = misc.DontBotherShelf(App.get_running_app().get_config("priorities.bin"))
+        self.priorities.set_default("PluginsPriority", MimeDict())
+        self.priorities.set_default("PluginsDefaults", ExtDict())
+        self.priorities.set_default("LyricsProvidersPriority", ExtDict())
+        self.priorities.set_default("LyricsProvidersDefaults", ExtDict())
+
         cfg = App.get_running_app().get_config("plugins.ini")
         if self.reset_plugins:
             try:
@@ -60,7 +64,7 @@ class PluginManager(EventDispatcher):
 
         # Reversing the list puts the system paths (usually not writable in
         #   secure OSes) at the beginning, and user paths at the end, so that
-        #   if the user updated the plugin, the user version is loaded.
+        #   if the user updated the plugin, the updated version is loaded.
         for path in reversed(paths):
             for i in (join(path, f) for f in os.listdir(path)):
                 if isdir(i):
@@ -85,11 +89,48 @@ class PluginManager(EventDispatcher):
                 self.loaded_plugins[latest.name] = {"manifest":latest, "module":plug}
                 Logger.info("PluginManager: Plug-in {0} loaded".format(latest.name))
                 if "player" in latest.purposes:
-                    self.players.append(plug.get_player())
+                    self.players[latest] = plug.get_player()
                 elif "lyrics_provider" in latest.purposes:
-                    self.lyr_providers.append(plug.get_lyr_handler())
+                    self.lyr_providers[latest] = plug.get_lyr_handler()
             else:
                 Logger.warning("PluginManager: Plugin {name} ({obj}) is of an unrecognised type: {type}".format(latest.name, str(plug), str(type(plug))))
+
+    def choose_player(self, obj):
+        # candidates1 = {}
+        # if type(obj) == type(str()):
+        #     candidates0 = {}
+        #     mime = MimeType(mimetypes.guess_type(obj))
+        #     for manifest in self.players:
+        #         for m in manifest.player.supported_mimes:
+        #             if m == mime:
+        #                 candidates0[manifest] = self.players[manifest]
+
+        #     for manifest in candidates0:
+        #         p = candidates0[manifest]
+        #         for ext in p.extensions():
+        #             if obj.lower().endswith(ext):
+        #                 candidates1[manifest] = self.players[manifest]
+        # else:
+        #     candidates1 = self.players
+
+        # candidates2 = {}
+        # for manifest in candidates1:
+        #     p = candidates1[manifest]
+        #     if p.supports(obj):
+        #         candidates2[manifest] = self.players[manifest]
+
+        # if type(obj) == type(str()):
+        #     default = self.priorities["PluginsDefaults"][splitext(obj)[1]]
+        #     if default:
+        #         for i in candidates2:
+        #             if default == i.name:
+        #                 return [{manifest: i, player: candidates2[i]}]
+
+        #################################################################
+
+        return [{"manifest": self.players.keys()[0], "player": self.players.values()[0]}]
+
+
 
 
     def load_plugin(self, manifest):
@@ -129,7 +170,8 @@ class PluginManager(EventDispatcher):
         for module in manifest.depends_py:
             try:
                 m = imp.find_module(module)
-                m[0].close()
+                if m[0]:
+                    m[0].close()
             except ImportError:
                 return "Cannot find module \"{0}\"".format(module)
         missing = []
@@ -248,7 +290,7 @@ class Plugin(EventDispatcher):
                 if type(manifest[i]) == type(u""):
                     kwargs[str(i)] = manifest[i]
                 else:
-                    kwargs[str(i)] = manifest[unicode(i, errors="ignore")]
+                    kwargs[str(i)] = manifest[str(i)]
         kwargs["version"] = Version(manifest["version"])
         kwargs["stock"] = manifest["name"].startswith(domain)
         kwargs["system"] = path.startswith(sys.prefix)
@@ -269,7 +311,7 @@ class Plugin(EventDispatcher):
         if "player" in manifest["purposes"]:
             kwargs["player"] = PurposePlayer(supported_mimes=[MimeType(i) for i in manifest["player.supported_mimes"]], supported_actions=manifest["player.supported_actions"], media_type=manifest["player.media_type"])
         if "lyrics_provider" in manifest["purposes"]:
-            kwargs["lyrics_provider"] = PurposeLyricsProvider(supported_audio_mimes=[MimeType(i) for i in manifest["lyrics_provider.supported_audio_mimes"]], supported_lrc_types=manifest["lyrics_provider.supported_lrc_types"], lyrics_type=manifest["lyrics_provider.lyrics_type"])
+            kwargs["lyrics_provider"] = PurposeLyricsProvider(supported_lrc_types=manifest["lyrics_provider.supported_lrc_types"], lyrics_type=manifest["lyrics_provider.lyrics_type"])
         if "ui_expansion" in manifest["purposes"]:
             kwargs["ui_expansion"] = PurposeUIExpansion(scopes=manifest["ui_expansion.scopes"])
         if "feature" in manifest["purposes"]:
@@ -285,7 +327,6 @@ class PurposePlayer(Purpose):
     media_type = OptionProperty("audio", options=["audio", "video"])
 
 class PurposeLyricsProvider(Purpose):
-    supported_audio_mimes = ListProperty([])
     supported_lrc_types = ListProperty([])
     lyrics_type = OptionProperty("text", options=("text", "graphic"))
 
@@ -406,6 +447,31 @@ class MimeType(str):
         else:
             return me != you
 
+class MimeDict(dict):
+    def __getitem__(self, item):
+        for i in self.keys():
+            if item == i:
+                return super(MimeDict, self).__getitem__(i)
+        else:
+            return None
+
+class ExtDict(dict):
+    def __getitem__(self, item):
+        item = item.lower()
+        if item.startswith("."):
+            item = item[1:]
+        for i in self.keys():
+            if item == i:
+                return super(ExtDict, self).__getitem__(i)
+        else:
+            None
+
+    def __setitem__(self, item, value):
+        item = item.lower()
+        if item.startswith("."):
+            item = item[1:]
+
+        super(ExtDict, self).__setitem__(item, value)
 
 class ConfigParser(KivyConfigParser):
     def __init__(self, *args, **kwargs):
@@ -436,3 +502,4 @@ class ConfigParser(KivyConfigParser):
 
     def toggle(self, section, option):
         self.setbool(section, option, not self.getbool(section, option))
+
